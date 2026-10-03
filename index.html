@@ -1,214 +1,389 @@
 <!DOCTYPE html>
-<html lang="si">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unlock Content</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  
-  <style>
-    :root {
-      --bg: #0b0f19;
-      --card-bg: rgba(22, 29, 47, 0.75);
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --accent: #ec4899;
-      --accent-glow: rgba(236, 72, 153, 0.3);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --border: rgba(255, 255, 255, 0.08);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Get Your File</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #8b5cf6; /* Violet / Purple */
+            --primary-glow: rgba(139, 92, 246, 0.35);
+            --success: #10b981; /* Emerald Green */
+            --success-glow: rgba(16, 185, 129, 0.35);
+            --bg-color: #07090e;
+            --card-bg: #111827;
+            --border-color: rgba(139, 92, 246, 0.2);
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            background-image: radial-gradient(circle at center, #111827 0%, #07090e 100%);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
 
-    body {
-      background-color: var(--bg);
-      background-image: 
-        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.15) 0%, transparent 40%);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
-    }
+        .container {
+            background: var(--card-bg);
+            padding: 32px 24px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(139, 92, 246, 0.1);
+            text-align: center;
+            max-width: 380px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+        }
 
-    .glass-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 2.2rem;
-      width: 100%;
-      max-width: 440px;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-      text-align: center;
-    }
+        /* Soft Ring Glow Animation */
+        @keyframes softPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 12px rgba(139, 92, 246, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+            }
+        }
 
-    h2 {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin-bottom: 0.5rem;
-    }
+        @keyframes successPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 12px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
 
-    p.subtitle {
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      margin-bottom: 1.8rem;
-      line-height: 1.5;
-    }
+        .icon-box {
+            width: 75px;
+            height: 75px;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            animation: softPulse 2.5s infinite;
+            transition: all 0.3s ease;
+        }
 
-    .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      padding: 0.95rem 1.2rem;
-      border-radius: 14px;
-      border: none;
-      font-weight: 700;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      color: white;
-      box-shadow: 0 8px 20px var(--accent-glow);
-    }
+        .icon-top {
+            font-size: 32px;
+            color: #a78bfa;
+        }
 
-    .btn:hover {
-      opacity: 0.95;
-      transform: translateY(-1px);
-    }
+        h1 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
 
-    .timer-circle {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.04);
-      border: 3px solid var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.6rem;
-      font-weight: 800;
-      margin: 1.2rem auto 1.2rem auto;
-      color: var(--text-main);
-    }
+        p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
 
-    .alert {
-      padding: 0.85rem;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      margin-bottom: 1.2rem;
-      background: rgba(99, 102, 241, 0.15);
-      color: #a5b4fc;
-    }
-  </style>
+        /* Animated Glowing Buttons */
+        @keyframes btnGlow {
+            0% { box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25); }
+            50% { box-shadow: 0 4px 25px rgba(139, 92, 246, 0.6); }
+            100% { box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25); }
+        }
+
+        @keyframes btnDownloadGlow {
+            0% { box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25); }
+            50% { box-shadow: 0 4px 25px rgba(16, 185, 129, 0.6); }
+            100% { box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25); }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            animation: btnGlow 3s infinite ease-in-out;
+            transition: transform 0.2s ease;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #10b981, #059669);
+            animation: btnDownloadGlow 3s infinite ease-in-out;
+        }
+
+        /* Circular Progress Timer Styles */
+        .timer-container {
+            display: none;
+            margin-bottom: 24px;
+        }
+
+        .circular-progress {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: conic-gradient(#8b5cf6 360deg, #1f2937 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px auto;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+            transition: background 0.1s linear;
+        }
+
+        .circular-progress::before {
+            content: "";
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--card-bg);
+        }
+
+        .time-display {
+            position: relative;
+            font-size: 32px;
+            font-weight: 700;
+            color: #f3e8ff;
+        }
+
+        /* SweetAlert2 Custom Theme & Size matched with UI */
+        .swal2-popup {
+            background: #111827 !important;
+            color: #f8fafc !important;
+            border: 1px solid var(--border-color);
+            border-radius: 24px !important;
+            font-family: inherit !important;
+            width: 330px !important; /* Main Card එකට සමාන ප්‍රමාණය */
+            padding: 24px 20px !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8) !important;
+        }
+        .swal2-title {
+            color: #f8fafc !important;
+            font-size: 20px !important;
+            margin-bottom: 8px !important;
+        }
+        .swal2-html-container {
+            color: var(--text-muted) !important;
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+        }
+        .swal2-actions {
+            margin-top: 20px !important;
+        }
+        .swal2-confirm {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+            border-radius: 12px !important;
+            padding: 10px 24px !important;
+            font-weight: 600 !important;
+            box-shadow: 0 4px 15px var(--primary-glow) !important;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="glass-card">
-    <h2>Unlock Content</h2>
-    <p class="subtitle">Complete the short verification step below to receive your file directly on Telegram.</p>
+    <div class="container">
+        <div class="icon-box" id="iconBox">
+            <i class="fa-solid fa-lock icon-top" id="mainIcon"></i>
+        </div>
+        
+        <h1 id="mainTitle">Get Your File</h1>
+        <p id="instructionText">Click below, wait 10 seconds on the opened page, then come back here.</p>
 
-    <div class="alert" id="statusMsg">
-      Click below to open the sponsor link and verify.
+        <!-- Circular Timer Box -->
+        <div class="timer-container" id="timerContainer">
+            <div class="circular-progress" id="progressCircle">
+                <div class="time-display" id="timeDisplay">15</div>
+            </div>
+            <p style="margin: 0; font-size: 14px; color: var(--text-muted);" id="timerSubText">Verifying your visit...</p>
+        </div>
+
+        <!-- Buttons -->
+        <button class="btn" id="unlockBtn">
+            <i class="fa-solid fa-lock-open"></i> Unlock Now
+        </button>
+        
+        <button class="btn btn-download" id="downloadBtn" style="display: none;">
+            <i class="fa-brands fa-telegram"></i> Open in Telegram
+        </button>
     </div>
 
-    <!-- Step 1 Button -->
-    <button id="adBtn" class="btn" onclick="startVerification()">
-      ⚡️ Step 1: Open Sponsor Link
-    </button>
+    <script>
+        // 🔴🔴 මෙතැන වෙනස් කරන්න 🔴🔴
+        const BOT_USERNAME = "FileStoreSl_bot"; // ඔයාගේ Bot Username එක
+        const AD_DIRECT_LINK = "https://www.google.com"; // ඔයාගේ Ad Direct Link එක
 
-    <!-- Timer Display -->
-    <div id="timerContainer" style="display: none;">
-      <div class="timer-circle" id="timerCount">15</div>
-      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
-        Verifying... Please wait a moment.
-      </p>
-    </div>
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileCode = urlParams.get('start');
 
-    <!-- Step 2 Button -->
-    <button id="finalGetBtn" class="btn" style="display: none;" onclick="goToBot()">
-      📥 Step 2: Get File on Telegram
-    </button>
-  </div>
+        const unlockBtn = document.getElementById('unlockBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const timerContainer = document.getElementById('timerContainer');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const progressCircle = document.getElementById('progressCircle');
+        const instructionText = document.getElementById('instructionText');
+        const mainTitle = document.getElementById('mainTitle');
+        const mainIcon = document.getElementById('mainIcon');
+        const iconBox = document.getElementById('iconBox');
+        const timerSubText = document.getElementById('timerSubText');
 
-  <script>
-    // --- CONFIGURATION ---
-    const AD_DIRECT_LINK = "https://www.google.com"; // මෙතනට ඔබගේ Adsterra Direct Link එක දමන්න
-    const BOT_USERNAME = "FileStoreSl_bot";          // Bot Username එක
-    const WAIT_SECONDS = 15;
+        let adClickTime = 0;
+        let totalTime = 15;
+        let timerInterval;
+        let isWaiting = false;
 
-    // Decryption Setup
-    const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
-    const SHIFT = 27; // tools.html එකේ අගයම විය යුතුය
-
-    function descramble(str) {
-      return str.split('').map(c => {
-        let idx = CHARS.indexOf(c);
-        if (idx === -1) return c;
-        let originalIdx = (idx - SHIFT + CHARS.length) % CHARS.length;
-        return CHARS[originalIdx];
-      }).join('');
-    }
-
-    // URL Query කියවීම (?t= හෝ ?start=)
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('t');
-    let realFileCode = urlParams.get('start');
-
-    if (token) {
-      realFileCode = descramble(token);
-    }
-
-    let timerInterval = null;
-
-    function startVerification() {
-      // 1. Direct Link ad එක new tab එකක open කිරීම
-      window.open(AD_DIRECT_LINK, '_blank');
-
-      // 2. Countdown ආරම්භ කිරීම
-      document.getElementById('adBtn').style.display = 'none';
-      document.getElementById('timerContainer').style.display = 'block';
-      document.getElementById('statusMsg').innerText = "Countdown in progress... Please keep this page open!";
-
-      let timeLeft = WAIT_SECONDS;
-      const timerCount = document.getElementById('timerCount');
-      timerCount.innerText = timeLeft;
-
-      timerInterval = setInterval(() => {
-        timeLeft--;
-        timerCount.innerText = timeLeft;
-
-        if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          document.getElementById('timerContainer').style.display = 'none';
-          document.getElementById('finalGetBtn').style.display = 'flex';
-          
-          const status = document.getElementById('statusMsg');
-          status.style.background = "rgba(16, 185, 129, 0.15)";
-          status.style.color = "#6ee7b7";
-          status.innerText = "Verified successfully! Click below to open Telegram.";
+        if (!fileCode) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops!',
+                text: 'Invalid or missing link.',
+                confirmButtonColor: '#8b5cf6'
+            });
+            unlockBtn.style.display = 'none';
+            instructionText.innerText = "This link is not valid.";
+            mainTitle.innerText = "Error";
         }
-      }, 1000);
-    }
 
-    function goToBot() {
-      if (realFileCode) {
-        window.location.href = `https://t.me/${BOT_USERNAME}?start=${realFileCode}`;
-      } else {
-        alert("Invalid file request!");
-      }
-    }
-  </script>
+        unlockBtn.addEventListener('click', () => {
+            adClickTime = Date.now();
+            isWaiting = true;
+
+            window.open(AD_DIRECT_LINK, '_blank');
+
+            unlockBtn.style.display = 'none';
+            timerContainer.style.display = 'block';
+            instructionText.style.display = 'none'; 
+            mainTitle.innerText = "Verifying your visit...";
+
+            timerInterval = setInterval(() => {
+                let elapsedTime = (Date.now() - adClickTime) / 1000;
+                let remainingTime = totalTime - elapsedTime;
+
+                if (remainingTime > 0) {
+                    timeDisplay.innerText = Math.ceil(remainingTime);
+                    let degree = (remainingTime / totalTime) * 360;
+                    progressCircle.style.background = `conic-gradient(#8b5cf6 ${degree}deg, #1f2937 0deg)`;
+                    timerSubText.innerHTML = `The link will unlock in <b>${Math.ceil(remainingTime)}</b> seconds.`;
+                } else {
+                    clearInterval(timerInterval);
+                    timeDisplay.innerText = "0";
+                    progressCircle.style.background = `conic-gradient(#8b5cf6 0deg, #1f2937 0deg)`;
+                    checkFinalStatus();
+                }
+            }, 50);
+        });
+
+        document.addEventListener("visibilitychange", () => {
+            checkUserReturn();
+        });
+
+        window.addEventListener("focus", () => {
+            checkUserReturn();
+        });
+
+        function checkUserReturn() {
+            if (!document.hidden && isWaiting) {
+                let timeSpent = (Date.now() - adClickTime) / 1000;
+                
+                if (timeSpent < 10) {
+                    clearInterval(timerInterval);
+                    isWaiting = false;
+                    
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Too Fast!',
+                        text: 'You returned too early. Please stay on the ad page for at least 10 seconds.',
+                        confirmButtonColor: '#8b5cf6',
+                        showClass: {
+                            popup: 'animate__animated animate__zoomIn animate__faster'
+                        },
+                        hideClass: {
+                            popup: 'animate__animated animate__zoomOut animate__faster'
+                        }
+                    }).then(() => {
+                        resetUI();
+                    });
+                }
+            }
+        }
+
+        function checkFinalStatus() {
+            let timeSpent = (Date.now() - adClickTime) / 1000;
+            isWaiting = false;
+
+            if (timeSpent >= 10) {
+                timerContainer.style.display = 'none';
+                instructionText.style.display = 'block';
+                mainTitle.innerText = "Ready!";
+                instructionText.innerHTML = "Your file is successfully unlocked!";
+                downloadBtn.style.display = 'flex';
+                
+                mainIcon.className = "fa-solid fa-lock-open icon-top";
+                mainIcon.style.color = "#34d399";
+                iconBox.style.animation = "successPulse 2.5s infinite";
+                iconBox.style.background = "rgba(16, 185, 129, 0.1)";
+                iconBox.style.borderColor = "rgba(16, 185, 129, 0.3)";
+                
+                downloadBtn.onclick = () => {
+                    window.location.href = `https://t.me/${BOT_USERNAME}?start=${fileCode}`;
+                };
+            }
+        }
+
+        function resetUI() {
+            unlockBtn.style.display = 'flex';
+            timerContainer.style.display = 'none';
+            instructionText.style.display = 'block';
+            mainTitle.innerText = "Get Your File";
+            instructionText.innerText = "Click below, wait 10 seconds on the opened page, then come back here.";
+            
+            mainIcon.className = "fa-solid fa-lock icon-top";
+            mainIcon.style.color = "#a78bfa";
+            iconBox.style.animation = "softPulse 2.5s infinite";
+            iconBox.style.background = "rgba(139, 92, 246, 0.1)";
+            iconBox.style.borderColor = "rgba(139, 92, 246, 0.3)";
+        }
+    </script>
 </body>
 </html>
