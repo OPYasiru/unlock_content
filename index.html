@@ -112,7 +112,7 @@
             box-shadow: 0 4px 15px var(--success-glow);
         }
 
-        /* Circular Progress Timer Styles */
+        /* Smooth Circular Progress Timer Styles */
         .timer-container {
             display: none;
             margin-bottom: 24px;
@@ -129,6 +129,8 @@
             justify-content: center;
             margin: 0 auto 16px auto;
             box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+            /* Smooth transition සඳහා */
+            transition: background 0.1s linear;
         }
 
         .circular-progress::before {
@@ -214,8 +216,7 @@
         const timerSubText = document.getElementById('timerSubText');
 
         let adClickTime = 0;
-        let timeLeft = 15;
-        let totalTime = 15;
+        let totalTime = 15; // තත්පර 15
         let timerInterval;
         let isWaiting = false;
 
@@ -234,33 +235,35 @@
         unlockBtn.addEventListener('click', () => {
             adClickTime = Date.now();
             isWaiting = true;
-            timeLeft = 15;
 
             window.open(AD_DIRECT_LINK, '_blank');
 
             unlockBtn.style.display = 'none';
             timerContainer.style.display = 'block';
-            instructionText.style.display = 'none'; // උඩින් තිබුණු සාමාන්‍ය ටෙක්ස්ට් එක සඟවයි
+            instructionText.style.display = 'none'; 
             mainTitle.innerText = "Verifying your visit...";
-            timeDisplay.innerText = timeLeft;
-            
-            mainIcon.className = "fa-solid fa-spinner fa-spin icon-top";
 
+            // Smooth progress animation සඳහා setInterval එක මිලි තත්පර 50කින් (සිනිදුවට) ක්‍රියාත්මක වේ
             timerInterval = setInterval(() => {
-                timeLeft--;
-                if (timeLeft >= 0) {
-                    timeDisplay.innerText = timeLeft;
-                    // Circular Progress එක අඩුවෙන හැටි calculate කිරීම
-                    let degree = (timeLeft / totalTime) * 360;
+                let elapsedTime = (Date.now() - adClickTime) / 1000;
+                let remainingTime = totalTime - elapsedTime;
+
+                if (remainingTime > 0) {
+                    // ඉලක්කම් පෙන්වීම (සම්පූර්ණ තත්පරයට)
+                    timeDisplay.innerText = Math.ceil(remainingTime);
+                    
+                    // රවුම සුමටව (Smoothly) අඩුවීගෙන යාම සඳහා conic-gradient එක වෙනස් කිරීම
+                    let degree = (remainingTime / totalTime) * 360;
                     progressCircle.style.background = `conic-gradient(#8b5cf6 ${degree}deg, #1f2937 0deg)`;
-                    timerSubText.innerHTML = `The link will unlock in <b>${timeLeft}</b> seconds.`;
-                }
-                
-                if (timeLeft <= 0) {
+                    
+                    timerSubText.innerHTML = `The link will unlock in <b>${Math.ceil(remainingTime)}</b> seconds.`;
+                } else {
                     clearInterval(timerInterval);
+                    timeDisplay.innerText = "0";
+                    progressCircle.style.background = `conic-gradient(#8b5cf6 0deg, #1f2937 0deg)`;
                     checkFinalStatus();
                 }
-            }, 1000);
+            }, 50);
         });
 
         // Tab මාරු කළත් හෝ Tab එක Close කරලා ආවත් වැඩ කරන Logic එක
