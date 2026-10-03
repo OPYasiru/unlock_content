@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Get Your File</title>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- FontAwesome (Icons) -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
             --primary: #0088cc;
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            --card-bg: rgba(30, 41, 59, 0.75);
-            --border-color: rgba(255, 255, 255, 0.1);
+            --bg-color: #0b0f19;
+            --card-bg: #131b2e;
+            --border-color: rgba(255, 255, 255, 0.08);
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
         }
@@ -23,11 +23,12 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg-gradient);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
             color: var(--text-main);
             display: flex;
             justify-content: center;
@@ -38,108 +39,96 @@
 
         .container {
             background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 32px 24px;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            padding: 28px 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             text-align: center;
-            max-width: 380px;
+            max-width: 360px;
             width: 100%;
             border: 1px solid var(--border-color);
-            animation: fadeIn 0.6s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .icon-box {
-            width: 80px;
-            height: 80px;
-            background: rgba(0, 136, 204, 0.15);
+            width: 70px;
+            height: 70px;
+            background: rgba(0, 136, 204, 0.1);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 20px auto;
-            border: 2px solid rgba(0, 136, 204, 0.3);
-            box-shadow: 0 0 20px rgba(0, 136, 204, 0.2);
-            transition: all 0.3s ease;
+            margin: 0 auto 18px auto;
+            border: 1px solid rgba(0, 136, 204, 0.2);
         }
 
         .icon-top {
-            font-size: 36px;
+            font-size: 30px;
             color: #38bdf8;
         }
 
         h1 {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            letter-spacing: 0.5px;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            letter-spacing: 0.3px;
         }
 
         p {
             color: var(--text-muted);
-            font-size: 14px;
-            margin-bottom: 24px;
-            line-height: 1.5;
+            font-size: 13px;
+            margin-bottom: 22px;
+            line-height: 1.4;
         }
 
         .btn {
-            background: linear-gradient(135deg, #0088cc, #0284c7);
+            background: #0088cc;
             color: white;
             border: none;
-            padding: 16px 24px;
-            font-size: 16px;
+            padding: 14px 20px;
+            font-size: 15px;
             font-weight: 600;
-            border-radius: 14px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 20px rgba(0, 136, 204, 0.35);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             width: 100%;
+            transition: background 0.2s;
         }
 
         .btn:active {
-            transform: scale(0.97);
+            opacity: 0.9;
+            transform: scale(0.98);
         }
 
         .btn-download {
-            background: linear-gradient(135deg, #10b981, #059669);
-            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+            background: #10b981;
         }
 
         .timer-container {
             display: none;
-            background: rgba(15, 23, 42, 0.6);
-            padding: 20px;
-            border-radius: 16px;
+            background: #090d16;
+            padding: 18px;
+            border-radius: 14px;
             margin-bottom: 20px;
-            border: 1px dashed rgba(255, 255, 255, 0.15);
+            border: 1px solid var(--border-color);
         }
 
         .time-display {
-            font-size: 38px;
-            font-weight: 800;
+            font-size: 34px;
+            font-weight: 700;
             color: #f43f5e;
-            text-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .loader {
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top: 3px solid #38bdf8;
+            border: 2px solid rgba(255,255,255,0.08);
+            border-top: 2px solid #38bdf8;
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             animation: spin 0.8s linear infinite;
-            margin: 12px auto 0 auto;
+            margin: 10px auto 0 auto;
         }
 
         @keyframes spin {
@@ -161,7 +150,7 @@
         <!-- Timer Box -->
         <div class="timer-container" id="timerContainer">
             <div class="time-display" id="timeDisplay">15</div>
-            <p style="margin: 0; font-size: 12px; color: #94a3b8;">Please wait patiently...</p>
+            <p style="margin: 0; font-size: 11px; color: var(--text-muted);">Processing request...</p>
             <div class="loader"></div>
         </div>
 
@@ -202,7 +191,7 @@
                 icon: 'error',
                 title: 'Oops!',
                 text: 'Invalid or missing link.',
-                background: '#1e293b',
+                background: '#131b2e',
                 color: '#fff',
                 confirmButtonColor: '#0088cc'
             });
@@ -220,36 +209,54 @@
 
             unlockBtn.style.display = 'none';
             timerContainer.style.display = 'block';
-            instructionText.innerText = "Processing your request...";
+            instructionText.innerText = "Please wait while preparing your file...";
             mainTitle.innerText = "Unlocking...";
             timeDisplay.innerText = timeLeft;
             
             mainIcon.className = "fa-solid fa-spinner fa-spin icon-top";
-            iconBox.style.borderColor = "rgba(56, 189, 248, 0.5)";
 
-            // තත්පර 15 ටයිමර් එක පටන් ගැනීම (කලින් අතරමඟදී කපන්නේ නැත, අගටම දුවයි)
             timerInterval = setInterval(() => {
                 timeLeft--;
                 if (timeLeft > 0) {
                     timeDisplay.innerText = timeLeft;
                 } else {
                     clearInterval(timerInterval);
-                    checkFinalStatus(); // ටයිමර් එක ඉවර වුණාම පරීක්ෂා කර බැලීම
+                    checkFinalStatus();
                 }
             }, 1000);
         });
 
-        // මෙතන visibilitychange එකෙන් දැන් අර මැදදි බාධා කරන්නේ නැත. 
-        // පරිශීලකයා Tab මාරු කළත් ටයිමර් එක දිගටම 15 දක්වා යයි.
+        // 🔴 පළමු තත්පර 10 තුළදී පරීක්ෂා කරන Logic එක (Visibility API)
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden && isWaiting) {
+                let timeSpent = (Date.now() - adClickTime) / 1000;
+                
+                // යූසර් පළමු තත්පර 10 ඇතුළත ආපහු ආවොත් විතරක් වහාම අල්ලා Error එක පෙන්වයි
+                if (timeSpent < 10) {
+                    clearInterval(timerInterval);
+                    isWaiting = false;
+                    
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Too Fast!',
+                        text: 'You returned too early. Please stay on the ad page for at least 10 seconds.',
+                        confirmButtonColor: '#f43f5e',
+                        background: '#131b2e',
+                        color: '#fff'
+                    }).then(() => {
+                        resetUI();
+                    });
+                }
+                // යූසර් තත්පර 10ක් ගෙවිලා ආපහු ආව නම්, මේක ඇතුළට එන්නේ නැති නිසා ටයිමර් එක 15 වෙනකල් සාමාන්‍ය පරිදි යයි.
+            }
+        });
 
-        // ටයිමර් එක සම්පූර්ණයෙන්ම අවසාන වූ පසු ක්‍රියාත්මක වන කොටස
         function checkFinalStatus() {
             let timeSpent = (Date.now() - adClickTime) / 1000;
             isWaiting = false;
 
-            // දැන් මෙතනදි බලනවා එයා ඇත්තටම Ad එකේ තත්පර 10ක් හිටියාද කියලා
+            // ටයිමර් එක 15ටම අවසන් වී මෙහි පැමිණි විට
             if (timeSpent >= 10) {
-                // සාර්ථකයි! (තත්පර 10ට වඩා වැඩි කාලයක් හිටලා තියෙනවා)
                 timerContainer.style.display = 'none';
                 mainTitle.innerText = "Ready!";
                 instructionText.innerHTML = "Your file is successfully unlocked!";
@@ -257,24 +264,12 @@
                 
                 mainIcon.className = "fa-solid fa-lock-open icon-top";
                 mainIcon.style.color = "#10b981";
-                iconBox.style.background = "rgba(16, 185, 129, 0.15)";
-                iconBox.style.borderColor = "rgba(16, 185, 129, 0.4)";
+                iconBox.style.background = "rgba(16, 185, 129, 0.1)";
+                iconBox.style.borderColor = "rgba(16, 185, 129, 0.3)";
                 
                 downloadBtn.onclick = () => {
                     window.location.href = `https://t.me/${BOT_USERNAME}?start=${fileCode}`;
                 };
-            } else {
-                // අසාර්ථකයි! (ටයිමර් එක 15ටම දිව්වත්, එයා Ad එකේ හිටලා තියෙන්නේ තත්පර 10කට වඩා අඩුවෙන්)
-                 Swal.fire({
-                    icon: 'error',
-                    title: 'Too Fast!',
-                    text: 'You did not stay on the ad page for at least 10 seconds. Please try again.',
-                    background: '#1e293b',
-                    color: '#fff',
-                    confirmButtonColor: '#f43f5e'
-                 }).then(() => {
-                     resetUI();
-                 });
             }
         }
 
@@ -287,8 +282,8 @@
             
             mainIcon.className = "fa-solid fa-lock icon-top";
             mainIcon.style.color = "#38bdf8";
-            iconBox.style.background = "rgba(0, 136, 204, 0.15)";
-            iconBox.style.borderColor = "rgba(0, 136, 204, 0.3)";
+            iconBox.style.background = "rgba(0, 136, 204, 0.1)";
+            iconBox.style.borderColor = "rgba(0, 136, 204, 0.2)";
         }
     </script>
 </body>
