@@ -188,22 +188,36 @@
             color: #f3e8ff;
         }
 
-        /* SweetAlert2 Custom Theme */
+        /* SweetAlert2 Custom Theme & Size matched with UI */
         .swal2-popup {
             background: #111827 !important;
             color: #f8fafc !important;
             border: 1px solid var(--border-color);
-            border-radius: 20px !important;
+            border-radius: 24px !important;
             font-family: inherit !important;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.7) !important;
+            width: 330px !important; /* Main Card එකට සමාන ප්‍රමාණය */
+            padding: 24px 20px !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8) !important;
         }
         .swal2-title {
             color: #f8fafc !important;
             font-size: 20px !important;
+            margin-bottom: 8px !important;
         }
         .swal2-html-container {
             color: var(--text-muted) !important;
             font-size: 14px !important;
+            line-height: 1.5 !important;
+        }
+        .swal2-actions {
+            margin-top: 20px !important;
+        }
+        .swal2-confirm {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+            border-radius: 12px !important;
+            padding: 10px 24px !important;
+            font-weight: 600 !important;
+            box-shadow: 0 4px 15px var(--primary-glow) !important;
         }
     </style>
 </head>
