@@ -195,7 +195,7 @@
             border: 1px solid var(--border-color);
             border-radius: 24px !important;
             font-family: inherit !important;
-            width: 330px !important; /* Main Card එකට සමාන ප්‍රමාණය */
+            width: 330px !important;
             padding: 24px 20px !important;
             box-shadow: 0 20px 40px rgba(0,0,0,0.8) !important;
         }
@@ -250,12 +250,30 @@
     </div>
 
     <script>
-        // 🔴🔴 මෙතැන වෙනස් කරන්න 🔴🔴
-        const BOT_USERNAME = "FileStoreSl_bot"; // ඔයාගේ Bot Username එක
-        const AD_DIRECT_LINK = "https://www.google.com"; // ඔයාගේ Ad Direct Link එක
+        const BOT_USERNAME = "FileStoreSl_bot";
+        const AD_DIRECT_LINK = "https://www.google.com";
 
+        // Compact Token Decryptor Setup
+        const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
+        const SHIFT = 27;
+
+        function descramble(str) {
+            return str.split('').map(c => {
+                let idx = CHARS.indexOf(c);
+                if (idx === -1) return c;
+                let originalIdx = (idx - SHIFT + CHARS.length) % CHARS.length;
+                return CHARS[originalIdx];
+            }).join('');
+        }
+
+        // Query parameters කියවා ගැනීම (?t= සහ ?start= දෙකම සහය දක්වයි)
         const urlParams = new URLSearchParams(window.location.search);
-        const fileCode = urlParams.get('start');
+        const token = urlParams.get('t');
+        let fileCode = urlParams.get('start');
+
+        if (token) {
+            fileCode = descramble(token);
+        }
 
         const unlockBtn = document.getElementById('unlockBtn');
         const downloadBtn = document.getElementById('downloadBtn');
