@@ -11,10 +11,13 @@
     
     <style>
         :root {
-            --primary: #0088cc;
-            --bg-color: #0b0f19;
-            --card-bg: #131b2e;
-            --border-color: rgba(255, 255, 255, 0.08);
+            --primary: #8b5cf6; /* Violet / Purple */
+            --primary-glow: rgba(139, 92, 246, 0.25);
+            --success: #10b981; /* Emerald Green */
+            --success-glow: rgba(16, 185, 129, 0.25);
+            --bg-color: #07090e;
+            --card-bg: #111827;
+            --border-color: rgba(139, 92, 246, 0.2);
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
         }
@@ -29,6 +32,7 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: var(--bg-color);
+            background-image: radial-gradient(circle at center, #111827 0%, #07090e 100%);
             color: var(--text-main);
             display: flex;
             justify-content: center;
@@ -39,95 +43,118 @@
 
         .container {
             background: var(--card-bg);
-            padding: 28px 20px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            padding: 32px 24px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.08);
             text-align: center;
-            max-width: 360px;
+            max-width: 380px;
             width: 100%;
             border: 1px solid var(--border-color);
         }
 
         .icon-box {
-            width: 70px;
-            height: 70px;
-            background: rgba(0, 136, 204, 0.1);
+            width: 75px;
+            height: 75px;
+            background: rgba(139, 92, 246, 0.1);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 18px auto;
-            border: 1px solid rgba(0, 136, 204, 0.2);
+            margin: 0 auto 20px auto;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            box-shadow: 0 0 15px var(--primary-glow);
+            transition: all 0.3s ease;
         }
 
         .icon-top {
-            font-size: 30px;
-            color: #38bdf8;
+            font-size: 32px;
+            color: #a78bfa;
         }
 
         h1 {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 600;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             letter-spacing: 0.3px;
         }
 
         p {
             color: var(--text-muted);
             font-size: 13px;
-            margin-bottom: 22px;
-            line-height: 1.4;
+            margin-bottom: 24px;
+            line-height: 1.5;
         }
 
         .btn {
-            background: #0088cc;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
             color: white;
             border: none;
-            padding: 14px 20px;
+            padding: 15px 20px;
             font-size: 15px;
             font-weight: 600;
-            border-radius: 12px;
+            border-radius: 14px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             width: 100%;
-            transition: opacity 0.2s;
+            box-shadow: 0 4px 15px var(--primary-glow);
+            transition: all 0.2s ease;
         }
 
         .btn:active {
-            opacity: 0.9;
             transform: scale(0.98);
         }
 
         .btn-download {
-            background: #10b981;
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 4px 15px var(--success-glow);
         }
 
+        /* Circular Progress Timer Styles */
         .timer-container {
             display: none;
-            background: #090d16;
-            padding: 18px;
-            border-radius: 14px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .circular-progress {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: conic-gradient(#8b5cf6 360deg, #1f2937 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px auto;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+        }
+
+        .circular-progress::before {
+            content: "";
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--card-bg);
         }
 
         .time-display {
-            font-size: 38px;
+            position: relative;
+            font-size: 32px;
             font-weight: 700;
-            color: #f43f5e;
-            margin-bottom: 2px;
+            color: #f3e8ff;
         }
 
-        /* SweetAlert2 Custom Popout Animation & Theme */
+        /* SweetAlert2 Custom Theme */
         .swal2-popup {
-            background: #131b2e !important;
+            background: #111827 !important;
             color: #f8fafc !important;
             border: 1px solid var(--border-color);
             border-radius: 20px !important;
             font-family: inherit !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7) !important;
         }
         .swal2-title {
             color: #f8fafc !important;
@@ -149,10 +176,12 @@
         <h1 id="mainTitle">Get Your File</h1>
         <p id="instructionText">Click below, wait 10 seconds on the opened page, then come back here.</p>
 
-        <!-- Timer Box (ස්ප්‍රින් එක/Loader එක ඉවත් කර ඇත) -->
+        <!-- Circular Timer Box -->
         <div class="timer-container" id="timerContainer">
-            <div class="time-display" id="timeDisplay">15</div>
-            <p style="margin: 0; font-size: 11px; color: var(--text-muted);">Processing request...</p>
+            <div class="circular-progress" id="progressCircle">
+                <div class="time-display" id="timeDisplay">15</div>
+            </div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-muted);" id="timerSubText">Verifying your visit...</p>
         </div>
 
         <!-- Buttons -->
@@ -177,13 +206,16 @@
         const downloadBtn = document.getElementById('downloadBtn');
         const timerContainer = document.getElementById('timerContainer');
         const timeDisplay = document.getElementById('timeDisplay');
+        const progressCircle = document.getElementById('progressCircle');
         const instructionText = document.getElementById('instructionText');
         const mainTitle = document.getElementById('mainTitle');
         const mainIcon = document.getElementById('mainIcon');
         const iconBox = document.getElementById('iconBox');
+        const timerSubText = document.getElementById('timerSubText');
 
         let adClickTime = 0;
         let timeLeft = 15;
+        let totalTime = 15;
         let timerInterval;
         let isWaiting = false;
 
@@ -192,8 +224,7 @@
                 icon: 'error',
                 title: 'Oops!',
                 text: 'Invalid or missing link.',
-                showClass: { popup: 'swal2-show' },
-                hideClass: { popup: 'swal2-hide' }
+                confirmButtonColor: '#8b5cf6'
             });
             unlockBtn.style.display = 'none';
             instructionText.innerText = "This link is not valid.";
@@ -209,24 +240,30 @@
 
             unlockBtn.style.display = 'none';
             timerContainer.style.display = 'block';
-            instructionText.innerText = "Please wait while preparing your file...";
-            mainTitle.innerText = "Unlocking...";
+            instructionText.style.display = 'none'; // උඩින් තිබුණු සාමාන්‍ය ටෙක්ස්ට් එක සඟවයි
+            mainTitle.innerText = "Verifying your visit...";
             timeDisplay.innerText = timeLeft;
             
             mainIcon.className = "fa-solid fa-spinner fa-spin icon-top";
 
             timerInterval = setInterval(() => {
                 timeLeft--;
-                if (timeLeft > 0) {
+                if (timeLeft >= 0) {
                     timeDisplay.innerText = timeLeft;
-                } else {
+                    // Circular Progress එක අඩුවෙන හැටි calculate කිරීම
+                    let degree = (timeLeft / totalTime) * 360;
+                    progressCircle.style.background = `conic-gradient(#8b5cf6 ${degree}deg, #1f2937 0deg)`;
+                    timerSubText.innerHTML = `The link will unlock in <b>${timeLeft}</b> seconds.`;
+                }
+                
+                if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     checkFinalStatus();
                 }
             }, 1000);
         });
 
-        // 🔴 Tab මාරු කළත් හෝ Ad Tab එක Close කරලා ආවත් වැඩ කරන Logic එක
+        // Tab මාරු කළත් හෝ Tab එක Close කරලා ආවත් වැඩ කරන Logic එක
         document.addEventListener("visibilitychange", () => {
             checkUserReturn();
         });
@@ -239,7 +276,6 @@
             if (!document.hidden && isWaiting) {
                 let timeSpent = (Date.now() - adClickTime) / 1000;
                 
-                // යූසර් තත්පර 10කට වඩා කලින් ආවොත් (Tab මාරු කරලා හෝ Tab එක වහලා ආවත්) වහාම අල්ලා Error එක පෙන්වයි
                 if (timeSpent < 10) {
                     clearInterval(timerInterval);
                     isWaiting = false;
@@ -248,7 +284,7 @@
                         icon: 'warning',
                         title: 'Too Fast!',
                         text: 'You returned too early. Please stay on the ad page for at least 10 seconds.',
-                        confirmButtonColor: '#f43f5e',
+                        confirmButtonColor: '#8b5cf6',
                         showClass: {
                             popup: 'animate__animated animate__zoomIn animate__faster'
                         },
@@ -268,14 +304,16 @@
 
             if (timeSpent >= 10) {
                 timerContainer.style.display = 'none';
+                instructionText.style.display = 'block';
                 mainTitle.innerText = "Ready!";
                 instructionText.innerHTML = "Your file is successfully unlocked!";
                 downloadBtn.style.display = 'flex';
                 
                 mainIcon.className = "fa-solid fa-lock-open icon-top";
-                mainIcon.style.color = "#10b981";
+                mainIcon.style.color = "#34d399";
                 iconBox.style.background = "rgba(16, 185, 129, 0.1)";
                 iconBox.style.borderColor = "rgba(16, 185, 129, 0.3)";
+                iconBox.style.boxShadow = "0 0 20px var(--success-glow)";
                 
                 downloadBtn.onclick = () => {
                     window.location.href = `https://t.me/${BOT_USERNAME}?start=${fileCode}`;
@@ -286,14 +324,15 @@
         function resetUI() {
             unlockBtn.style.display = 'flex';
             timerContainer.style.display = 'none';
-            downloadBtn.style.display = 'none';
+            instructionText.style.display = 'block';
             mainTitle.innerText = "Get Your File";
             instructionText.innerText = "Click below, wait 10 seconds on the opened page, then come back here.";
             
             mainIcon.className = "fa-solid fa-lock icon-top";
-            mainIcon.style.color = "#38bdf8";
-            iconBox.style.background = "rgba(0, 136, 204, 0.1)";
-            iconBox.style.borderColor = "rgba(0, 136, 204, 0.2)";
+            mainIcon.style.color = "#a78bfa";
+            iconBox.style.background = "rgba(139, 92, 246, 0.1)";
+            iconBox.style.borderColor = "rgba(139, 92, 246, 0.3)";
+            iconBox.style.boxShadow = "0 0 15px var(--primary-glow)";
         }
     </script>
 </body>
