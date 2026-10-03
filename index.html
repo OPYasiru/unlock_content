@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Get Your File</title>
+    <title>Get Your File - Secure Link</title>
+    <!-- Favicon -->
+    <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/lock.svg">
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- FontAwesome -->
@@ -12,14 +14,14 @@
     <style>
         :root {
             --primary: #8b5cf6; /* Violet / Purple */
-            --primary-glow: rgba(139, 92, 246, 0.25);
+            --primary-glow: rgba(139, 92, 246, 0.35);
             --success: #10b981; /* Emerald Green */
-            --success-glow: rgba(16, 185, 129, 0.25);
+            --success-glow: rgba(16, 185, 129, 0.35);
             --bg-color: #07090e;
             --card-bg: #111827;
             --border-color: rgba(139, 92, 246, 0.2);
             --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --text-muted: #cbd5e1; /* ටිකක් වැඩිපුර පැහැදිලි වන සේ ප්‍රමාණය සහ වර්ණය සකසා ඇත */
         }
         
         * {
@@ -45,11 +47,36 @@
             background: var(--card-bg);
             padding: 32px 24px;
             border-radius: 24px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.08);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(139, 92, 246, 0.1);
             text-align: center;
             max-width: 380px;
             width: 100%;
             border: 1px solid var(--border-color);
+        }
+
+        /* Soft Ring Glow Animation (හුස්ම ගන්නවා වගේ බැබළෙන රවුම) */
+        @keyframes softPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 12px rgba(139, 92, 246, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+            }
+        }
+
+        @keyframes successPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 12px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
         }
 
         .icon-box {
@@ -62,7 +89,7 @@
             justify-content: center;
             margin: 0 auto 20px auto;
             border: 1px solid rgba(139, 92, 246, 0.3);
-            box-shadow: 0 0 15px var(--primary-glow);
+            animation: softPulse 2.5s infinite;
             transition: all 0.3s ease;
         }
 
@@ -80,9 +107,22 @@
 
         p {
             color: var(--text-muted);
-            font-size: 13px;
+            font-size: 14px; /* ටිකක් වැඩි කළ ප්‍රමාණය */
             margin-bottom: 24px;
             line-height: 1.5;
+        }
+
+        /* Animated Glowing Buttons */
+        @keyframes btnGlow {
+            0% { box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25); }
+            50% { box-shadow: 0 4px 25px rgba(139, 92, 246, 0.6); }
+            100% { box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25); }
+        }
+
+        @keyframes btnDownloadGlow {
+            0% { box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25); }
+            50% { box-shadow: 0 4px 25px rgba(16, 185, 129, 0.6); }
+            100% { box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25); }
         }
 
         .btn {
@@ -99,8 +139,8 @@
             justify-content: center;
             gap: 10px;
             width: 100%;
-            box-shadow: 0 4px 15px var(--primary-glow);
-            transition: all 0.2s ease;
+            animation: btnGlow 3s infinite ease-in-out;
+            transition: transform 0.2s ease;
         }
 
         .btn:active {
@@ -109,10 +149,10 @@
 
         .btn-download {
             background: linear-gradient(135deg, #10b981, #059669);
-            box-shadow: 0 4px 15px var(--success-glow);
+            animation: btnDownloadGlow 3s infinite ease-in-out;
         }
 
-        /* Smooth Circular Progress Timer Styles */
+        /* Circular Progress Timer Styles */
         .timer-container {
             display: none;
             margin-bottom: 24px;
@@ -129,7 +169,6 @@
             justify-content: center;
             margin: 0 auto 16px auto;
             box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
-            /* Smooth transition සඳහා */
             transition: background 0.1s linear;
         }
 
@@ -164,7 +203,7 @@
         }
         .swal2-html-container {
             color: var(--text-muted) !important;
-            font-size: 13px !important;
+            font-size: 14px !important;
         }
     </style>
 </head>
@@ -183,7 +222,7 @@
             <div class="circular-progress" id="progressCircle">
                 <div class="time-display" id="timeDisplay">15</div>
             </div>
-            <p style="margin: 0; font-size: 13px; color: var(--text-muted);" id="timerSubText">Verifying your visit...</p>
+            <p style="margin: 0; font-size: 14px; color: var(--text-muted);" id="timerSubText">Verifying your visit...</p>
         </div>
 
         <!-- Buttons -->
@@ -216,7 +255,7 @@
         const timerSubText = document.getElementById('timerSubText');
 
         let adClickTime = 0;
-        let totalTime = 15; // තත්පර 15
+        let totalTime = 15;
         let timerInterval;
         let isWaiting = false;
 
@@ -243,19 +282,14 @@
             instructionText.style.display = 'none'; 
             mainTitle.innerText = "Verifying your visit...";
 
-            // Smooth progress animation සඳහා setInterval එක මිලි තත්පර 50කින් (සිනිදුවට) ක්‍රියාත්මක වේ
             timerInterval = setInterval(() => {
                 let elapsedTime = (Date.now() - adClickTime) / 1000;
                 let remainingTime = totalTime - elapsedTime;
 
                 if (remainingTime > 0) {
-                    // ඉලක්කම් පෙන්වීම (සම්පූර්ණ තත්පරයට)
                     timeDisplay.innerText = Math.ceil(remainingTime);
-                    
-                    // රවුම සුමටව (Smoothly) අඩුවීගෙන යාම සඳහා conic-gradient එක වෙනස් කිරීම
                     let degree = (remainingTime / totalTime) * 360;
                     progressCircle.style.background = `conic-gradient(#8b5cf6 ${degree}deg, #1f2937 0deg)`;
-                    
                     timerSubText.innerHTML = `The link will unlock in <b>${Math.ceil(remainingTime)}</b> seconds.`;
                 } else {
                     clearInterval(timerInterval);
@@ -266,7 +300,6 @@
             }, 50);
         });
 
-        // Tab මාරු කළත් හෝ Tab එක Close කරලා ආවත් වැඩ කරන Logic එක
         document.addEventListener("visibilitychange", () => {
             checkUserReturn();
         });
@@ -314,9 +347,9 @@
                 
                 mainIcon.className = "fa-solid fa-lock-open icon-top";
                 mainIcon.style.color = "#34d399";
+                iconBox.style.animation = "successPulse 2.5s infinite";
                 iconBox.style.background = "rgba(16, 185, 129, 0.1)";
                 iconBox.style.borderColor = "rgba(16, 185, 129, 0.3)";
-                iconBox.style.boxShadow = "0 0 20px var(--success-glow)";
                 
                 downloadBtn.onclick = () => {
                     window.location.href = `https://t.me/${BOT_USERNAME}?start=${fileCode}`;
@@ -333,9 +366,9 @@
             
             mainIcon.className = "fa-solid fa-lock icon-top";
             mainIcon.style.color = "#a78bfa";
+            iconBox.style.animation = "softPulse 2.5s infinite";
             iconBox.style.background = "rgba(139, 92, 246, 0.1)";
             iconBox.style.borderColor = "rgba(139, 92, 246, 0.3)";
-            iconBox.style.boxShadow = "0 0 15px var(--primary-glow)";
         }
     </script>
 </body>
