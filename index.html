@@ -93,7 +93,7 @@
             justify-content: center;
             gap: 10px;
             width: 100%;
-            transition: background 0.2s;
+            transition: opacity 0.2s;
         }
 
         .btn:active {
@@ -115,25 +115,27 @@
         }
 
         .time-display {
-            font-size: 34px;
+            font-size: 38px;
             font-weight: 700;
             color: #f43f5e;
             margin-bottom: 2px;
         }
 
-        .loader {
-            border: 2px solid rgba(255,255,255,0.08);
-            border-top: 2px solid #38bdf8;
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            animation: spin 0.8s linear infinite;
-            margin: 10px auto 0 auto;
+        /* SweetAlert2 Custom Popout Animation & Theme */
+        .swal2-popup {
+            background: #131b2e !important;
+            color: #f8fafc !important;
+            border: 1px solid var(--border-color);
+            border-radius: 20px !important;
+            font-family: inherit !important;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .swal2-title {
+            color: #f8fafc !important;
+            font-size: 20px !important;
+        }
+        .swal2-html-container {
+            color: var(--text-muted) !important;
+            font-size: 13px !important;
         }
     </style>
 </head>
@@ -147,11 +149,10 @@
         <h1 id="mainTitle">Get Your File</h1>
         <p id="instructionText">Click below, wait 10 seconds on the opened page, then come back here.</p>
 
-        <!-- Timer Box -->
+        <!-- Timer Box (ස්ප්‍රින් එක/Loader එක ඉවත් කර ඇත) -->
         <div class="timer-container" id="timerContainer">
             <div class="time-display" id="timeDisplay">15</div>
             <p style="margin: 0; font-size: 11px; color: var(--text-muted);">Processing request...</p>
-            <div class="loader"></div>
         </div>
 
         <!-- Buttons -->
@@ -191,9 +192,8 @@
                 icon: 'error',
                 title: 'Oops!',
                 text: 'Invalid or missing link.',
-                background: '#131b2e',
-                color: '#fff',
-                confirmButtonColor: '#0088cc'
+                showClass: { popup: 'swal2-show' },
+                hideClass: { popup: 'swal2-hide' }
             });
             unlockBtn.style.display = 'none';
             instructionText.innerText = "This link is not valid.";
@@ -226,12 +226,20 @@
             }, 1000);
         });
 
-        // 🔴 පළමු තත්පර 10 තුළදී පරීක්ෂා කරන Logic එක (Visibility API)
+        // 🔴 Tab මාරු කළත් හෝ Ad Tab එක Close කරලා ආවත් වැඩ කරන Logic එක
         document.addEventListener("visibilitychange", () => {
+            checkUserReturn();
+        });
+
+        window.addEventListener("focus", () => {
+            checkUserReturn();
+        });
+
+        function checkUserReturn() {
             if (!document.hidden && isWaiting) {
                 let timeSpent = (Date.now() - adClickTime) / 1000;
                 
-                // යූසර් පළමු තත්පර 10 ඇතුළත ආපහු ආවොත් විතරක් වහාම අල්ලා Error එක පෙන්වයි
+                // යූසර් තත්පර 10කට වඩා කලින් ආවොත් (Tab මාරු කරලා හෝ Tab එක වහලා ආවත්) වහාම අල්ලා Error එක පෙන්වයි
                 if (timeSpent < 10) {
                     clearInterval(timerInterval);
                     isWaiting = false;
@@ -241,21 +249,23 @@
                         title: 'Too Fast!',
                         text: 'You returned too early. Please stay on the ad page for at least 10 seconds.',
                         confirmButtonColor: '#f43f5e',
-                        background: '#131b2e',
-                        color: '#fff'
+                        showClass: {
+                            popup: 'animate__animated animate__zoomIn animate__faster'
+                        },
+                        hideClass: {
+                            popup: 'animate__animated animate__zoomOut animate__faster'
+                        }
                     }).then(() => {
                         resetUI();
                     });
                 }
-                // යූසර් තත්පර 10ක් ගෙවිලා ආපහු ආව නම්, මේක ඇතුළට එන්නේ නැති නිසා ටයිමර් එක 15 වෙනකල් සාමාන්‍ය පරිදි යයි.
             }
-        });
+        }
 
         function checkFinalStatus() {
             let timeSpent = (Date.now() - adClickTime) / 1000;
             isWaiting = false;
 
-            // ටයිමර් එක 15ටම අවසන් වී මෙහි පැමිණි විට
             if (timeSpent >= 10) {
                 timerContainer.style.display = 'none';
                 mainTitle.innerText = "Ready!";
