@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unlock Content - Secure Link</title>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #0088cc;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            background-image: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid #334155;
+        }
+
+        .icon-top {
+            font-size: 55px;
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
+        }
+
+        h1 {
+            font-size: 24px;
+            margin: 0 0 10px 0;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #0088cc, #005f99);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 136, 204, 0.4);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 136, 204, 0.6);
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-download:hover {
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.6);
+        }
+
+        .timer-container {
+            display: none;
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 1px dashed #334155;
+        }
+
+        .time-display {
+            font-size: 40px;
+            font-weight: bold;
+            color: #ef4444;
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+        }
+
+        .loader {
+            border: 3px solid #334155;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <i class="fa-solid fa-shield-halved icon-top" id="mainIcon"></i>
+        <h1>Unlock File</h1>
+        <p id="instructionText">Click the button below, open the page, and stay there for at least 10 seconds.</p>
+
+        <div class="timer-container" id="timerContainer">
+            <div class="time-display" id="timeDisplay">15</div>
+            <p style="margin: 10px 0 0 0; font-size: 12px;">Please wait...</p>
+            <div class="loader"></div>
+        </div>
+
+        <button class="btn" id="unlockBtn">
+            <i class="fa-solid fa-unlock-keyhole"></i> Unlock File
+        </button>
+        
+        <button class="btn btn-download" id="downloadBtn" style="display: none;">
+            <i class="fa-brands fa-telegram"></i> Get File in Telegram
+        </button>
+    </div>
+
+    <script>
+        // 🔴🔴 මෙතැන වෙනස් කරන්න 🔴🔴
+        const BOT_USERNAME = "FileStoreSl_bot"; // ඔයාගේ බොට්ගේ Username එක
+        const AD_DIRECT_LINK = "https://www.google.com"; // ඔයාගේ Ad Direct Link එක
+
+        // URL එකෙන් ?start= කොටස ලබා ගැනීම
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileCode = urlParams.get('start');
+
+        const unlockBtn = document.getElementById('unlockBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const timerContainer = document.getElementById('timerContainer');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const instructionText = document.getElementById('instructionText');
+        const mainIcon = document.getElementById('mainIcon');
+
+        let adClickTime = 0;
+        let timeLeft = 15;
+        let timerInterval;
+        let isWaiting = false;
+
+        if (!fileCode) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Link!',
+                text: 'No file code found in this link.',
+                background: '#1e293b',
+                color: '#fff'
+            });
+            unlockBtn.style.display = 'none';
+            instructionText.innerText = "Access denied. Invalid link.";
+        }
+
+        unlockBtn.addEventListener('click', () => {
+            adClickTime = Date.now();
+            isWaiting = true;
+            timeLeft = 15;
+
+            window.open(AD_DIRECT_LINK, '_blank');
+
+            unlockBtn.style.display = 'none';
+            timerContainer.style.display = 'block';
+            instructionText.innerText = "Unlocking your file...";
+            timeDisplay.innerText = timeLeft;
+            mainIcon.className = "fa-solid fa-spinner fa-spin icon-top";
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft > 0) {
+                    timeDisplay.innerText = timeLeft;
+                } else {
+                    clearInterval(timerInterval);
+                    checkFinalStatus();
+                }
+            }, 1000);
+        });
+
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden && isWaiting) {
+                let timeSpent = (Date.now() - adClickTime) / 1000;
+                
+                if (timeSpent < 10) {
+                    clearInterval(timerInterval);
+                    isWaiting = false;
+                    
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Failed!',
+                        text: 'You did not stay on the ad page for at least 10 seconds. Please try again.',
+                        confirmButtonColor: '#ef4444',
+                        background: '#1e293b',
+                        color: '#fff'
+                    }).then(() => {
+                        resetUI();
+                    });
+                }
+            }
+        });
+
+        function checkFinalStatus() {
+            let timeSpent = (Date.now() - adClickTime) / 1000;
+            isWaiting = false;
+
+            if (timeSpent >= 10) {
+                timerContainer.style.display = 'none';
+                instructionText.innerHTML = "<span style='color:#10b981; font-weight:bold;'>Your file is ready!</span> Get it below.";
+                downloadBtn.style.display = 'inline-flex';
+                mainIcon.className = "fa-solid fa-folder-open icon-top";
+                mainIcon.style.color = "#10b981";
+                
+                // Telegram වෙත හරවා යැවීම (?start= කෝඩ් එක සමඟ)
+                downloadBtn.onclick = () => {
+                    window.location.href = `https://t.me/${BOT_USERNAME}?start=${fileCode}`;
+                };
+            } else {
+                 Swal.fire({
+                    icon: 'error',
+                    title: 'Time is too short!',
+                    text: 'Please stay on the advertisement page for at least 10 seconds.',
+                    background: '#1e293b',
+                    color: '#fff'
+                 });
+                 resetUI();
+            }
+        }
+
+        function resetUI() {
+            unlockBtn.style.display = 'inline-flex';
+            timerContainer.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            instructionText.innerText = "Click the button below, open the page, and stay there for at least 10 seconds.";
+            mainIcon.className = "fa-solid fa-shield-halved icon-top";
+            mainIcon.style.color = "var(--primary)";
+        }
+    </script>
+</body>
+</html>
