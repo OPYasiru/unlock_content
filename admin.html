@@ -1,23 +1,31 @@
 <!DOCTYPE html>
-<html lang="si">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Short Encrypted Link Generator</title>
+  <title>Link Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
     :root {
       --bg: #0b0f19;
       --card-bg: rgba(22, 29, 47, 0.85);
       --primary: #6366f1;
+      --primary-hover: #4f46e5;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --border: rgba(255, 255, 255, 0.1);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
     body {
       background-color: var(--bg);
       background-image: radial-gradient(circle at 50% 30%, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
@@ -28,6 +36,7 @@
       justify-content: center;
       padding: 1.5rem;
     }
+
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -38,43 +47,100 @@
       backdrop-filter: blur(16px);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     }
-    h2 { font-size: 1.35rem; font-weight: 800; margin-bottom: 0.3rem; }
-    p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
-    label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 0.3rem;
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
     input {
-      width: 100%; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--border);
-      border-radius: 12px; padding: 0.85rem 1rem; color: white; font-size: 0.95rem; outline: none;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+      color: white;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
     }
-    input:focus { border-color: var(--primary); }
+
+    input:focus {
+      border-color: var(--primary);
+    }
+
     .output-box {
-      background: rgba(0, 0, 0, 0.45); border: 1px dashed var(--border);
-      border-radius: 12px; padding: 1rem; margin-top: 1.2rem; position: relative; display: none;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 1.2rem;
+      position: relative;
+      display: none;
     }
-    .output-box code { word-break: break-all; font-size: 0.9rem; color: #38bdf8; display: block; padding-right: 4.5rem; }
+
+    .output-box code {
+      word-break: break-all;
+      font-size: 0.9rem;
+      color: #38bdf8;
+      display: block;
+      padding-right: 4.5rem;
+    }
+
     .copy-btn {
-      position: absolute; top: 0.7rem; right: 0.7rem; background: var(--primary);
-      border: none; color: white; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+      position: absolute;
+      top: 0.7rem;
+      right: 0.7rem;
+      background: var(--primary);
+      border: none;
+      color: white;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
     }
-    .copy-btn:hover { opacity: 0.9; }
+
+    .copy-btn:hover {
+      background: var(--primary-hover);
+    }
   </style>
 </head>
 <body>
 
   <div class="card">
-    <h2>⚡️ Secure Link Generator</h2>
-    <p>කෙටි, ආරක්ෂිත (Bypass කළ නොහැකි) Vercel Link එක සාදාගන්න.</p>
+    <h2>⚡️ Link Generator</h2>
+    <p>Convert your Telegram link into a secure, short unlock URL.</p>
 
-    <label>Telegram Universal Link / Start Code</label>
+    <label>Telegram Link or Code</label>
     <input 
       type="text" 
       id="inputLink" 
-      placeholder="Paste telegram link or start code here..." 
+      placeholder="Paste telegram link or code here..." 
       oninput="makeCompactLink()"
       autofocus
     >
 
     <div class="output-box" id="outputBox">
-      <button class="copy-btn" onclick="copyResult()">Copy</button>
+      <button class="copy-btn" id="copyBtn" onclick="copyResult()">Copy</button>
       <label style="margin-bottom: 0.3rem;">Short Unlock Link:</label>
       <code id="resultUrl"></code>
     </div>
@@ -83,9 +149,8 @@
   <script>
     const DOMAIN = "https://unlockcontent.vercel.app";
     const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
-    const SHIFT = 27; // රහස් Shift අගය
+    const SHIFT = 27;
 
-    // කෙටි 1:1 Substitution Cipher
     function scramble(str) {
       return str.split('').map(c => {
         let idx = CHARS.indexOf(c);
@@ -117,8 +182,11 @@
     function copyResult() {
       const text = document.getElementById('resultUrl').innerText;
       if (!text) return;
+      
       navigator.clipboard.writeText(text).then(() => {
-        alert("Link copied to clipboard!");
+        const btn = document.getElementById('copyBtn');
+        btn.innerText = "Copied!";
+        setTimeout(() => { btn.innerText = "Copy"; }, 1500);
       });
     }
   </script>
