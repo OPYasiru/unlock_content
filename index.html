@@ -152,7 +152,6 @@
 
     <div class="container">
         <div class="icon-box" id="iconBox">
-            <!-- අගුලක (Lock) ලකුණ -->
             <i class="fa-solid fa-lock icon-top" id="mainIcon"></i>
         </div>
         
@@ -225,54 +224,37 @@
             mainTitle.innerText = "Unlocking...";
             timeDisplay.innerText = timeLeft;
             
-            // ලෝඩින් වෙද්දී අගුල ඇරුණු ලකුණක් පෙන්වීම
             mainIcon.className = "fa-solid fa-spinner fa-spin icon-top";
             iconBox.style.borderColor = "rgba(56, 189, 248, 0.5)";
 
+            // තත්පර 15 ටයිමර් එක පටන් ගැනීම (කලින් අතරමඟදී කපන්නේ නැත, අගටම දුවයි)
             timerInterval = setInterval(() => {
                 timeLeft--;
                 if (timeLeft > 0) {
                     timeDisplay.innerText = timeLeft;
                 } else {
                     clearInterval(timerInterval);
-                    checkFinalStatus();
+                    checkFinalStatus(); // ටයිමර් එක ඉවර වුණාම පරීක්ෂා කර බැලීම
                 }
             }, 1000);
         });
 
-        document.addEventListener("visibilitychange", () => {
-            if (!document.hidden && isWaiting) {
-                let timeSpent = (Date.now() - adClickTime) / 1000;
-                
-                if (timeSpent < 10) {
-                    clearInterval(timerInterval);
-                    isWaiting = false;
-                    
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Too Fast!',
-                        text: 'Please stay on the opened page for at least 10 seconds and try again.',
-                        confirmButtonColor: '#f43f5e',
-                        background: '#1e293b',
-                        color: '#fff'
-                    }).then(() => {
-                        resetUI();
-                    });
-                }
-            }
-        });
+        // මෙතන visibilitychange එකෙන් දැන් අර මැදදි බාධා කරන්නේ නැත. 
+        // පරිශීලකයා Tab මාරු කළත් ටයිමර් එක දිගටම 15 දක්වා යයි.
 
+        // ටයිමර් එක සම්පූර්ණයෙන්ම අවසාන වූ පසු ක්‍රියාත්මක වන කොටස
         function checkFinalStatus() {
             let timeSpent = (Date.now() - adClickTime) / 1000;
             isWaiting = false;
 
+            // දැන් මෙතනදි බලනවා එයා ඇත්තටම Ad එකේ තත්පර 10ක් හිටියාද කියලා
             if (timeSpent >= 10) {
+                // සාර්ථකයි! (තත්පර 10ට වඩා වැඩි කාලයක් හිටලා තියෙනවා)
                 timerContainer.style.display = 'none';
                 mainTitle.innerText = "Ready!";
                 instructionText.innerHTML = "Your file is successfully unlocked!";
                 downloadBtn.style.display = 'flex';
                 
-                // සාර්ථක වූ විට අගුල ඇරුණු ලකුණක් (Unlock) පෙන්වීම
                 mainIcon.className = "fa-solid fa-lock-open icon-top";
                 mainIcon.style.color = "#10b981";
                 iconBox.style.background = "rgba(16, 185, 129, 0.15)";
@@ -282,15 +264,17 @@
                     window.location.href = `https://t.me/${BOT_USERNAME}?start=${fileCode}`;
                 };
             } else {
+                // අසාර්ථකයි! (ටයිමර් එක 15ටම දිව්වත්, එයා Ad එකේ හිටලා තියෙන්නේ තත්පර 10කට වඩා අඩුවෙන්)
                  Swal.fire({
                     icon: 'error',
-                    title: 'Please Wait',
-                    text: 'You must stay on the page for 10 seconds.',
+                    title: 'Too Fast!',
+                    text: 'You did not stay on the ad page for at least 10 seconds. Please try again.',
                     background: '#1e293b',
                     color: '#fff',
-                    confirmButtonColor: '#0088cc'
+                    confirmButtonColor: '#f43f5e'
+                 }).then(() => {
+                     resetUI();
                  });
-                 resetUI();
             }
         }
 
@@ -301,7 +285,6 @@
             mainTitle.innerText = "Get Your File";
             instructionText.innerText = "Click below, wait 10 seconds on the opened page, then come back here.";
             
-            // මුල් තත්ත්වයට පත් කරද්දී අගුළු ලකුණ (Lock) දැමීම
             mainIcon.className = "fa-solid fa-lock icon-top";
             mainIcon.style.color = "#38bdf8";
             iconBox.style.background = "rgba(0, 136, 204, 0.15)";
