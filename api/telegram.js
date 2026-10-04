@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
     const BOT_TOKEN = "8715294684:AAFdq0e3SFZBeKj9i9o1s2D8nDN410csq5U";
     const MAIN_CHANNEL_ID = "-1003920624467";
-    const DB_CHANNEL_ID = "-100XXXXXXXXX"; // 🔴 ඔයාගේ FileStore DB චැනල් ID එක මෙතනට දාන්න (උදා: -100123456789)
+    const DB_CHANNEL_ID = "-1004365559436"; // 🔴 ඔයාගේ FileStore DB චැනල් ID එක මෙතනට දාන්න (උදා: -100123456789)
     const ADMIN_USER_ID = 5411921025;
     const BASE_URL = "https://unlockcontent.vercel.app";
     const DEFAULT_BANNER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80";
