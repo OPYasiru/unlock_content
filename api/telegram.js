@@ -20,7 +20,6 @@ export default async function handler(req, res) {
     const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
     const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
-    // Cron Job (Auto Delete) හැමවිටම File Bot ගෙන් ක්‍රියාත්මක වේ
     if (req.method === 'GET' && req.query.cron === 'true') {
         const queue = await kvGet("delete_queue") || [];
         const now = Date.now();
@@ -41,7 +40,6 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') return res.status(200).send('Dual Bots Running');
 
-    // කුමන බොට් ද කියා හඳුනාගැනීම (URL එක හරහා)
     const isPostBot = req.query.bot === 'post';
     const BOT_TOKEN = isPostBot ? POST_BOT : FILE_BOT;
 
@@ -81,7 +79,6 @@ export default async function handler(req, res) {
         const user = msg.from;
         const textContent = msg.text || msg.caption || "";
 
-        // File Bot වෙත එන Users ව Save කරගැනීම
         if (!isPostBot && chatId !== ADMIN_USER_ID) {
             let users = await kvGet("bot_users") || [];
             if (!users.includes(chatId)) { users.push(chatId); await kvSet("bot_users", users); }
@@ -124,12 +121,20 @@ export default async function handler(req, res) {
         }
 
         // ==========================================
-        // 2. ADMIN SECTION
+        // 2. ADMIN SECTION (Custom Thumbnail Update)
         // ==========================================
         if (chatId === ADMIN_USER_ID) {
-            // (A) පෝස්ට් හැදීම (Post Bot හරහා පමණි)
-            if (isPostBot && (msg.video || msg.document || msg.photo)) {
-                const copyRes = await fetch(`https://api.telegram.org/bot${POST_BOT}/copyMessage`, {
+            
+            // 📸 (A) පින්තූරයක් යැවූ විට (Thumbnail එක Save කිරීම)
+            if (msg.photo) {
+                const tId = msg.photo[msg.photo.length - 1].file_id;
+                await kvSet("custom_thumb", tId);
+                return sendMsg(chatId, "🖼 <b>Thumbnail එක සාර්ථකව Save කළා!</b>\n\nදැන් ඔයාගේ Video එක යවන්න. මේ පින්තූරය ඒ Video එකේ පෝස්ට් එකට වැටෙයි.");
+            }
+
+            // 🎥 (B) වීඩියෝවක් යැවූ විට (පෝස්ට් එක හැදීම)
+            if (msg.video || msg.document) {
+                const copyRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/copyMessage`, {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ chat_id: DB_CHANNEL_ID, from_chat_id: chatId, message_id: msg.message_id })
                 }).then(r => r.json());
@@ -138,13 +143,19 @@ export default async function handler(req, res) {
                 const token = encodeId(copyRes.result.message_id);
                 const targetLink = `${BASE_URL}/?t=${token}`;
 
-                let thumbId = null;
-                if (msg.video) thumbId = (msg.video.thumbnail && msg.video.thumbnail.file_id) || (msg.video.thumb && msg.video.thumb.file_id);
-                else if (msg.document) thumbId = (msg.document.thumbnail && msg.document.thumbnail.file_id) || (msg.document.thumb && msg.document.thumb.file_id);
-                else if (msg.photo) thumbId = msg.photo[msg.photo.length - 1].file_id;
+                // කලින් Save කරපු Thumbnail එකක් තියෙනවද කියලා බැලීම
+                let thumbId = await kvGet("custom_thumb");
+                
+                if (thumbId) {
+                    await kvSet("custom_thumb", null); // ඊළඟ Video එකට බලපාන්නේ නැති වෙන්න Clear කිරීම
+                } else {
+                    // නැත්නම් Video එකෙන්ම Thumbnail එක හොයනවා
+                    if (msg.video) thumbId = (msg.video.thumbnail && msg.video.thumbnail.file_id) || (msg.video.thumb && msg.video.thumb.file_id);
+                    else if (msg.document) thumbId = (msg.document.thumbnail && msg.document.thumbnail.file_id) || (msg.document.thumb && msg.document.thumb.file_id);
+                }
 
                 let finalCaption = await kvGet("default_caption") || "<blockquote>🔥 Hot Lanka New Update! ❞</blockquote>\n<blockquote>⏳ Link will expire soon, download now! ❞</blockquote>";
-                const inlineKeyboard = { inline_keyboard: [ [{ text: "👁 Watch", url: targetLink }, { text: "⬇️ Download", url: targetLink }] ] }; // බටන් දෙක වෙන් කළා
+                const inlineKeyboard = { inline_keyboard: [ [{ text: "👁 Watch", url: targetLink }, { text: "⬇ Download", url: targetLink }] ] };
 
                 let postRes;
                 if (thumbId) {
@@ -153,6 +164,7 @@ export default async function handler(req, res) {
                         body: JSON.stringify({ chat_id: MAIN_CHANNEL_ID, photo: thumbId, caption: finalCaption, parse_mode: 'HTML', reply_markup: inlineKeyboard })
                     }).then(r => r.json());
                 }
+                
                 if (!postRes || !postRes.ok) {
                     await fetch(`https://api.telegram.org/bot${POST_BOT}/sendPhoto`, { 
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, 
@@ -162,7 +174,7 @@ export default async function handler(req, res) {
                 return sendMsg(chatId, `✅ <b>Post එක සාර්ථකයි!</b>\n🔗 Link: <code>${targetLink}</code>`);
             }
 
-            // (B) Admin Commands (Settings & Stats)
+            // (C) Admin Commands
             if (textContent.startsWith('/settext ')) { await kvSet("default_caption", textContent.replace('/settext ', '').trim()); await sendMsg(chatId, `✅ Post Text එක වෙනස් කළා.`); }
             else if (textContent.startsWith('/setcaption ')) { await kvSet("file_caption", textContent.replace('/setcaption ', '').trim()); await sendMsg(chatId, `✅ File Caption එක වෙනස් කළා.`); }
             else if (textContent.startsWith('/setforcesub ')) { await kvSet("forcesub_text", textContent.replace('/setforcesub ', '').trim()); await sendMsg(chatId, `✅ Force Sub Text එක වෙනස් කළා.`); }
