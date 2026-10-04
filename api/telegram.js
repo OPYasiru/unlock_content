@@ -44,18 +44,46 @@ export default async function handler(req, res) {
                 ] 
             };
 
-            // Main Channel එකට Banner එක සහ Buttons සහිතව Post එක දැමීම
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: MAIN_CHANNEL_ID,
-                    photo: DEFAULT_BANNER,
-                    caption: finalCaption,
-                    parse_mode: 'HTML',
-                    reply_markup: inlineKeyboard
-                })
-            });
+            // Thumbnail එක සොයා ගැනීම (Video / Photo / Document)
+            let thumbId = null;
+            if (msg.video) {
+                thumbId = (msg.video.thumbnail && msg.video.thumbnail.file_id) || (msg.video.thumb && msg.video.thumb.file_id);
+            } else if (msg.document) {
+                thumbId = (msg.document.thumbnail && msg.document.thumbnail.file_id) || (msg.document.thumb && msg.document.thumb.file_id);
+            } else if (msg.photo) {
+                thumbId = msg.photo[msg.photo.length - 1].file_id;
+            }
+
+            let postRes;
+            // 1. Thumbnail එකක් තිබේ නම් එයින් Post කිරීම
+            if (thumbId) {
+                postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: MAIN_CHANNEL_ID,
+                        photo: thumbId,
+                        caption: finalCaption,
+                        parse_mode: 'HTML',
+                        reply_markup: inlineKeyboard
+                    })
+                }).then(r => r.json());
+            }
+
+            // 2. Thumbnail එකක් නැතිනම් Default Banner එක යොදා ගැනීම
+            if (!postRes || !postRes.ok) {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: MAIN_CHANNEL_ID,
+                        photo: DEFAULT_BANNER,
+                        caption: finalCaption,
+                        parse_mode: 'HTML',
+                        reply_markup: inlineKeyboard
+                    })
+                });
+            }
 
             // Admin වෙත Confirmation එක යැවීම
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -77,7 +105,7 @@ export default async function handler(req, res) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     chat_id: chatId,
-                    text: "👋 <b>Hot Lanka Post Bot!</b>\n\nFileStore Bot ගෙන් ලැබෙන ලින්ක් එක මෙතනට එවන්න (නැත්නම් ඒ මැසේජ් එක Forward කරන්න). මම Main Channel එකට Auto Post කරන්නම්.",
+                    text: "👋 <b>Hot Lanka Post Bot!</b>\n\nFileStore Bot ගෙන් ලැබෙන ලින්ක් එක (හෝ Video එක Caption එකේ ලින්ක් එක සහිතව) මෙතනට එවන්න.",
                     parse_mode: 'HTML'
                 })
             });
