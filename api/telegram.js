@@ -140,16 +140,7 @@ export default async function handler(req, res) {
                                 method: 'POST',
                                 body: formData
                             });
-                            // VIP Channel එකට Direct Video එක යැවීම
-await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/copyMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        chat_id: VIP_CHANNEL_ID,
-        from_chat_id: message.chat.id, // DB Channel එකේ ID එක
-        message_id: message.message_id  // වීඩියෝවේ Message ID එක
-    })
-});
+                            
 
                         }
                     } catch (uploadErr) {
