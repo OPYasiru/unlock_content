@@ -2,10 +2,9 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(200).send('Bot is running');
 
     const BOT_TOKEN = "8715294684:AAG-avmObwlmLRFVK8LTtpcUbaZtwX_g4g4";
-    const CHANNEL_ID = "-1003920624467";
-    const ADMIN_USER_ID = 5411921025;
     const CHANNEL_ID = "-1003920624467"; // Main Channel ID
     const VIP_CHANNEL_ID = "-1004316350899"; // VIP Channel ID
+    const ADMIN_USER_ID = 5411921025;
     const BASE_URL = "https://unlockcontent.vercel.app";
     const DEFAULT_BANNER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80";
 
@@ -61,6 +60,7 @@ export default async function handler(req, res) {
         const body = req.body;
         if (!body) return res.status(200).json({ ok: true });
 
+        // DB Channel එකට Video හෝ Post එකක් වැටුණු විට ක්‍රියාත්මක වන කොටස
         if (body.channel_post) {
             const post = body.channel_post;
             let thumbId = null;
@@ -70,6 +70,22 @@ export default async function handler(req, res) {
             else if (post.photo) thumbId = post.photo[post.photo.length - 1].file_id;
 
             if (thumbId) await kvSet("latest_thumbnail_id", thumbId);
+
+            // DB Channel එකට එන වීඩියෝ/පෝස්ට් එක කෙලින්ම VIP Channel එකට Forward Tags නැතිව Auto Copy කිරීම
+            try {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/copyMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: VIP_CHANNEL_ID,
+                        from_chat_id: post.chat.id,
+                        message_id: post.message_id
+                    })
+                });
+            } catch (vipErr) {
+                console.error("VIP Copy Error:", vipErr);
+            }
+
             return res.status(200).json({ ok: true });
         }
 
@@ -133,15 +149,13 @@ export default async function handler(req, res) {
                             formData.append('chat_id', CHANNEL_ID);
                             formData.append('photo', imageBlob, 'thumb.jpg');
                             formData.append('caption', finalCaption);
-                            formData.append('parse_mode', 'HTML'); // මෙතැනට HTML parsing එකතු කළා
+                            formData.append('parse_mode', 'HTML');
                             formData.append('reply_markup', JSON.stringify(inlineKeyboard));
 
                             postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                                 method: 'POST',
                                 body: formData
                             });
-                            
-
                         }
                     } catch (uploadErr) {
                         console.error("Upload Error:", uploadErr);
@@ -156,7 +170,7 @@ export default async function handler(req, res) {
                             chat_id: CHANNEL_ID,
                             photo: DEFAULT_BANNER,
                             caption: finalCaption,
-                            parse_mode: 'HTML', // මෙතැනටත් HTML parsing එකතු කළා
+                            parse_mode: 'HTML',
                             reply_markup: inlineKeyboard
                         })
                     });
