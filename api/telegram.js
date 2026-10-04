@@ -31,26 +31,24 @@ export default async function handler(req, res) {
         } catch (e) { console.error(e); }
     }
 
-    // KV එකේ Thumbnail ID එක Save කිරීම
-    async function saveLatestThumbnail(fileId) {
+    async function kvSet(key, value) {
         if (!KV_URL || !KV_TOKEN) return;
         try {
             await fetch(KV_URL, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(["SET", "latest_thumbnail_id", fileId])
+                body: JSON.stringify(["SET", key, value])
             });
         } catch (e) { console.error("KV Set Error:", e); }
     }
 
-    // KV එකෙන් Thumbnail ID එක ගැනීම
-    async function getLatestThumbnail() {
+    async function kvGet(key) {
         if (!KV_URL || !KV_TOKEN) return null;
         try {
             const resp = await fetch(KV_URL, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(["GET", "latest_thumbnail_id"])
+                body: JSON.stringify(["GET", key])
             });
             const data = await resp.json();
             return data.result;
@@ -61,7 +59,6 @@ export default async function handler(req, res) {
         const body = req.body;
         if (!body) return res.status(200).json({ ok: true });
 
-        // 1. FileStore DB එකට Video එක වැටෙන විට ID එක Cache කිරීම
         if (body.channel_post) {
             const post = body.channel_post;
             let thumbId = null;
@@ -70,11 +67,10 @@ export default async function handler(req, res) {
             else if (post.document && post.document.thumbnail) thumbId = post.document.thumbnail.file_id;
             else if (post.photo) thumbId = post.photo[post.photo.length - 1].file_id;
 
-            if (thumbId) await saveLatestThumbnail(thumbId);
+            if (thumbId) await kvSet("latest_thumbnail_id", thumbId);
             return res.status(200).json({ ok: true });
         }
 
-        // 2. ලින්ක් එක Forward කළ විට
         if (body.message) {
             const msg = body.message;
             const chatId = msg.chat.id;
@@ -82,6 +78,18 @@ export default async function handler(req, res) {
             if (msg.from && msg.from.id !== ADMIN_USER_ID) return res.status(200).json({ ok: true });
 
             const textContent = msg.text || msg.caption || "";
+
+            if (textContent.startsWith('/settext ')) {
+                const newText = textContent.replace('/settext ', '').trim();
+                await kvSet("default_caption", newText);
+                await sendMsg(chatId, `✅ <b>Default text updated successfully:</b>\n\n${newText}`);
+                return res.status(200).json({ ok: true });
+            }
+
+            if (textContent.startsWith('/start') || textContent.startsWith('/help')) {
+                await sendMsg(chatId, "<b>Hot Lanka Bot Active!</b>\n\n- Forward a FileStore link to create a post with default text.\n- Use <code>/settext [your text]</code> to change the default caption.\n- To use a custom caption for a single post, type your text and paste the link at the end of it.");
+                return res.status(200).json({ ok: true });
+            }
 
             if (textContent.includes("start=")) {
                 const startCode = textContent.split("start=")[1].split("&")[0].split(/\s+/)[0].trim();
@@ -94,12 +102,22 @@ export default async function handler(req, res) {
                     ]
                 };
 
-                const captionText = "🔥 Hot Lanka New Update!\n⏳ Link will expire soon, download now!";
-                const thumbFileId = await getLatestThumbnail();
+                let finalCaption = await kvGet("default_caption");
+                if (!finalCaption) {
+                    finalCaption = "🔥 Hot Lanka New Update!\n⏳ Link will expire soon, download now!";
+                }
 
+                // FileStore Forward Text එකක් නොවේ නම්, යැවූ Custom Text එක ලබා ගැනීම
+                if (!textContent.includes("Here is your universal link:") && !textContent.includes("Note:The same content")) {
+                    const customText = textContent.replace(/https?:\/\/[^\s]+/g, '').trim();
+                    if (customText.length > 0) {
+                        finalCaption = customText;
+                    }
+                }
+
+                const thumbFileId = await kvGet("latest_thumbnail_id");
                 let postRes;
 
-                // Thumbnail එක Download කර Upload කිරීම
                 if (thumbFileId) {
                     try {
                         const getFileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${thumbFileId}`);
@@ -108,15 +126,14 @@ export default async function handler(req, res) {
                         if (fileData.ok && fileData.result.file_path) {
                             const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
                             const imageRes = await fetch(fileUrl);
-                            const imageBlob = await imageRes.blob(); // Vercel එක ඇතුළට Download කරගනී
+                            const imageBlob = await imageRes.blob();
 
                             const formData = new FormData();
                             formData.append('chat_id', CHANNEL_ID);
                             formData.append('photo', imageBlob, 'thumb.jpg');
-                            formData.append('caption', captionText);
+                            formData.append('caption', finalCaption);
                             formData.append('reply_markup', JSON.stringify(inlineKeyboard));
 
-                            // File එකක් විදියට Telegram එකට Upload කිරීම
                             postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                                 method: 'POST',
                                 body: formData
@@ -127,7 +144,6 @@ export default async function handler(req, res) {
                     }
                 }
 
-                // යම් දෝෂයක් ආවොත් පමණක් Default Banner එක දැමීම
                 if (!postRes || !postRes.ok) {
                     postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                         method: 'POST',
@@ -135,7 +151,7 @@ export default async function handler(req, res) {
                         body: JSON.stringify({
                             chat_id: CHANNEL_ID,
                             photo: DEFAULT_BANNER,
-                            caption: captionText,
+                            caption: finalCaption,
                             reply_markup: inlineKeyboard
                         })
                     });
@@ -143,7 +159,7 @@ export default async function handler(req, res) {
 
                 const resJson = await postRes.json();
                 if (resJson.ok) {
-                    await sendMsg(chatId, "✅ <b>Post එක සාර්ථකව Video Thumbnail එක සමඟින් පළ විය!</b>");
+                    await sendMsg(chatId, "✅ <b>Post published successfully!</b>");
                 } else {
                     await sendMsg(chatId, `❌ Error: ${resJson.description}`);
                 }
