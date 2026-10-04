@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(200).send('Post Bot Running');
+    if (req.method !== 'POST') return res.status(200).send('Bot is running');
 
     const BOT_TOKEN = "8715294684:AAG-avmObwlmLRFVK8LTtpcUbaZtwX_g4g4"; // ඔයාගේ අලුත් Post Bot Token එක
     const MAIN_CHANNEL_ID = "-1003920624467"; // ප්‍රධාන චැනල් එක
@@ -7,6 +7,34 @@ export default async function handler(req, res) {
     const ADMIN_USER_ID = 5411921025; // ඔයාගේ ID එක
     const BASE_URL = "https://unlockcontent.vercel.app";
     const DEFAULT_BANNER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80";
+
+    // Upstash Redis සම්බන්ධතාවය
+    const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+    const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+
+    async function kvSet(key, value) {
+        if (!KV_URL) return;
+        await fetch(KV_URL, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(["SET", key, value])
+        });
+    }
+
+    async function kvGet(key) {
+        if (!KV_URL) return null;
+        try {
+            const resp = await fetch(KV_URL, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(["GET", key])
+            });
+            const data = await resp.json();
+            return data.result;
+        } catch (e) {
+            return null;
+        }
+    }
 
     // Compact Scrambler (WebApp එකට ගැළපෙන Token Scrambler එක)
     const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
@@ -21,16 +49,39 @@ export default async function handler(req, res) {
 
     try {
         const body = req.body;
-        if (!body || !body.message) return res.status(200).json({ ok: true });
+        if (!body) return res.status(200).json({ ok: true });
 
+        // ==============================================================
+        // 1. FileStore DB එකට අලුතින් Video එකක් වැටුණු විට Thumbnail එක Redis හි Save වීම
+        // ==============================================================
+        const channelPost = body.channel_post;
+        if (channelPost && String(channelPost.chat.id) === DB_CHANNEL_ID) {
+            let thumb = null;
+            if (channelPost.video && (channelPost.video.thumbnail || channelPost.video.thumb)) {
+                thumb = (channelPost.video.thumbnail && channelPost.video.thumbnail.file_id) || (channelPost.video.thumb && channelPost.video.thumb.file_id);
+            } else if (channelPost.document && (channelPost.document.thumbnail || channelPost.document.thumb)) {
+                thumb = (channelPost.document.thumbnail && channelPost.document.thumbnail.file_id) || (channelPost.document.thumb && channelPost.document.thumb.file_id);
+            } else if (channelPost.photo && channelPost.photo.length > 0) {
+                thumb = channelPost.photo[channelPost.photo.length - 1].file_id;
+            }
+
+            if (thumb) {
+                await kvSet("latest_thumbnail_id", thumb);
+            }
+            return res.status(200).json({ ok: true });
+        }
+
+        // ==============================================================
+        // 2. Admin විසින් Post Bot වෙත Link එක එවූ විට Post එක පළ වීම
+        // ==============================================================
         const msg = body.message;
+        if (!msg) return res.status(200).json({ ok: true });
+
         const chatId = msg.chat.id;
         const text = msg.text || msg.caption || "";
 
-        // Admin ට පමණක් ඉඩ දීම
         if (chatId !== ADMIN_USER_ID) return res.status(200).json({ ok: true });
 
-        // FileStore Bot ගෙන් එන ලින්ක් එක අඳුනාගැනීම (t.me/...start=XXXX)
         const match = text.match(/(?:start=|send\s+)([A-Za-z0-9_-]+)/);
 
         if (match) {
@@ -45,61 +96,10 @@ export default async function handler(req, res) {
                 ] 
             };
 
-            let thumbId = null;
-
-            // 1. DB චැනල් එකට අන්තිමට වැටුණු වීඩියෝව සොයා Thumbnail එක ලබා ගැනීම
-            try {
-                // DB චැනල් එකේ අලුත්ම Message ID එක හඳුනාගැනීම
-                const probeRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: DB_CHANNEL_ID, text: "🔍" })
-                }).then(r => r.json());
-
-                if (probeRes.ok) {
-                    const latestId = probeRes.result.message_id;
-                    // Probe මැසේජ් එක වහාම මකා දැමීම
-                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ chat_id: DB_CHANNEL_ID, message_id: latestId })
-                    });
-
-                    // අන්තිමට DB එකට වැටුණු මැසේජ් 6 පරීක්ෂා කිරීම
-                    for (let checkId = latestId - 1; checkId >= latestId - 6; checkId--) {
-                        const fwdRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ chat_id: ADMIN_USER_ID, from_chat_id: DB_CHANNEL_ID, message_id: checkId })
-                        }).then(r => r.json());
-
-                        if (fwdRes.ok) {
-                            const fMsg = fwdRes.result;
-
-                            // Video, Document හෝ Photo වලින් නිවැරදි Thumbnail එක ගැනීම
-                            if (fMsg.video && (fMsg.video.thumbnail || fMsg.video.thumb)) {
-                                thumbId = (fMsg.video.thumbnail && fMsg.video.thumbnail.file_id) || (fMsg.video.thumb && fMsg.video.thumb.file_id);
-                            } else if (fMsg.document && (fMsg.document.thumbnail || fMsg.document.thumb)) {
-                                thumbId = (fMsg.document.thumbnail && fMsg.document.thumbnail.file_id) || (fMsg.document.thumb && fMsg.document.thumb.file_id);
-                            } else if (fMsg.photo && fMsg.photo.length > 0) {
-                                thumbId = fMsg.photo[fMsg.photo.length - 1].file_id;
-                            }
-
-                            // Admin චැට් එකට ආ මැසේජ් එක ක්ෂණිකව මකා දැමීම
-                            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ chat_id: ADMIN_USER_ID, message_id: fMsg.message_id })
-                            });
-
-                            if (thumbId) break; // Thumbnail එක හමු වූ සැනින් නවත්වන්න
-                        }
-                    }
-                }
-            } catch (e) {}
+            // Upstash Redis එකේ ඇති Thumbnail එක ලබා ගැනීම
+            let thumbId = await kvGet("latest_thumbnail_id");
 
             let postRes;
-            // 2. Thumbnail එක ඇත්නම් එයින් Main Channel එකට පළ කිරීම
             if (thumbId) {
                 postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                     method: 'POST',
@@ -114,7 +114,7 @@ export default async function handler(req, res) {
                 }).then(r => r.json());
             }
 
-            // 3. Thumbnail නොමැති නම් පමණක් Default Banner එක යෙදීම
+            // කිසිම Thumbnail එකක් නොලැබුණහොත් Default Banner එක යොදා ගැනීම
             if (!postRes || !postRes.ok) {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                     method: 'POST',
@@ -129,7 +129,9 @@ export default async function handler(req, res) {
                 });
             }
 
-            // Admin ට සාර්ථක බව දැන්වීම
+            // Post වූ පසු Thumbnail එක Redis වෙතින් ඉවත් කිරීම (ඊළඟ එකට පැටලෙන්නේ නැති වීමට)
+            await kvSet("latest_thumbnail_id", null);
+
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
