@@ -8,6 +8,9 @@ export default async function handler(req, res) {
     const ADMIN_USER_ID = 5411921025;
     const BASE_URL = "https://unlockcontent.vercel.app";
 
+    // 🔴 Photo එකක් නැතිව Message එක Forward කරද්දී පෝස්ට් එකට වැටෙන Default Image එක
+    const DEFAULT_BANNER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80";
+
     const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
     const SHIFT = 27;
 
@@ -37,51 +40,28 @@ export default async function handler(req, res) {
 
         const chatId = message.chat.id;
 
-        // Admin verification
+        // Admin Verification
         if (message.from.id !== ADMIN_USER_ID) {
             await sendMsg(chatId, "Access denied. Admin only.");
             return res.status(200).send('Unauthorized');
         }
 
-        // 1. Text Messages (/start or text)
-        if (message.text) {
-            const text = message.text.trim();
-            if (text.startsWith('/start') || text.startsWith('/help')) {
-                await sendMsg(chatId, "<b>Hot Lanka Bot Active!</b>\n\nPlease send a <b>Photo</b> with the FileStore link in the caption.");
-                return res.status(200).json({ status: 'ok' });
-            } else {
-                await sendMsg(chatId, "⚠️ Please send a <b>Photo</b> with the link in its caption to create a channel post.");
-                return res.status(200).json({ status: 'ok' });
-            }
+        // /start command එක
+        if (message.text && (message.text === '/start' || message.text === '/help')) {
+            await sendMsg(chatId, "<b>Hot Lanka Bot Ready!</b>\n\nFileStore Bot එවපු Message එක මේකට <b>Forward</b> කරන්න විතරයි තියෙන්නේ.");
+            return res.status(200).json({ status: 'ok' });
         }
 
-        // 2. Photo or Media with Caption
-        if ((message.photo || message.video || message.document) && message.caption) {
-            const fullCaption = message.caption.trim();
+        // Text එකක් හෝ Forward කරපු Message එකක් හෝ Media Caption එකක් ආ විට
+        const rawContent = message.text || message.caption || "";
 
-            let startCode = "";
-            let finalCaption = "🔥 Hot Lanka New Update!\n⏳ Download now before it expires!";
-
-            // Extract start code
-            if (fullCaption.includes("start=")) {
-                const parts = fullCaption.split("start=");
-                startCode = parts[1].split("&")[0].split(" ")[0].trim();
-                const customText = parts[0].replace(/https?:\/\/t\.me\/[^\s]+/g, '').trim();
-                if (customText.length > 0) {
-                    finalCaption = customText;
-                }
-            } else {
-                const parts = fullCaption.split(/\s+/);
-                startCode = parts[parts.length - 1].trim();
-                const customText = parts.slice(0, -1).join(' ').trim();
-                if (customText.length > 0) {
-                    finalCaption = customText;
-                }
-            }
-
+        // FileStore link එකෙන් start code එක Extract කර ගැනීම
+        if (rawContent.includes("start=")) {
+            const startCode = rawContent.split("start=")[1].split("&")[0].split(/\s+/)[0].trim();
             const token = scramble(startCode);
             const targetLink = `${BASE_URL}/?t=${token}`;
 
+            // Buttons දෙක
             const inlineKeyboard = {
                 inline_keyboard: [
                     [
@@ -91,39 +71,39 @@ export default async function handler(req, res) {
                 ]
             };
 
-            let photoToSend = null;
+            // Image එකක් තිබේ නම් එය ගනී, නැතිනම් Default Banner එක යොදාගනී
+            let photoToSend = DEFAULT_BANNER;
             if (message.photo) {
                 photoToSend = message.photo[message.photo.length - 1].file_id;
             } else if (message.video && message.video.thumbnail) {
                 photoToSend = message.video.thumbnail.file_id;
-            } else if (message.document && message.document.thumbnail) {
-                photoToSend = message.document.thumbnail.file_id;
             }
 
-            if (photoToSend) {
-                const postResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: CHANNEL_ID,
-                        photo: photoToSend,
-                        caption: finalCaption,
-                        reply_markup: inlineKeyboard
-                    })
-                });
+            const defaultCaption = "🔥 Hot Lanka New Update!\n⏳ Link will expire soon, download now!";
 
-                const resData = await postResponse.json();
-                if (resData.ok) {
-                    await sendMsg(chatId, "✅ Post published successfully to Channel!");
-                } else {
-                    await sendMsg(chatId, `❌ Error: ${resData.description}`);
-                }
+            // Channel එකට Photo එකක් ලෙස Post කිරීම
+            const postResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: CHANNEL_ID,
+                    photo: photoToSend,
+                    caption: defaultCaption,
+                    reply_markup: inlineKeyboard
+                })
+            });
+
+            const resData = await postResponse.json();
+            if (resData.ok) {
+                await sendMsg(chatId, "✅ <b>Post එක සාර්ථකව Hot Lanka Channel එකට පළ විය!</b>");
             } else {
-                await sendMsg(chatId, "⚠️ Could not extract thumbnail. Please upload an image directly.");
+                await sendMsg(chatId, `❌ Error: ${resData.description}`);
             }
 
             return res.status(200).json({ status: 'ok' });
         }
+
+        await sendMsg(chatId, "⚠️ එවූ පණිවිඩයේ FileStore Link එකක් (start=...) හමු නොවීය.");
 
     } catch (err) {
         console.error("Handler error:", err);
