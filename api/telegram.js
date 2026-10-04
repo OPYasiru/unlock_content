@@ -104,10 +104,9 @@ export default async function handler(req, res) {
 
                 let finalCaption = await kvGet("default_caption");
                 if (!finalCaption) {
-                    finalCaption = "🔥 Hot Lanka New Update!\n⏳ Link will expire soon, download now!";
+                    finalCaption = "<blockquote>🔥 Hot Lanka New Update! ❞</blockquote>\n<blockquote>⏳ Link will expire soon, download now! ❞</blockquote>";
                 }
 
-                // FileStore Forward Text එකක් නොවේ නම්, යැවූ Custom Text එක ලබා ගැනීම
                 if (!textContent.includes("Here is your universal link:") && !textContent.includes("Note:The same content")) {
                     const customText = textContent.replace(/https?:\/\/[^\s]+/g, '').trim();
                     if (customText.length > 0) {
@@ -132,6 +131,7 @@ export default async function handler(req, res) {
                             formData.append('chat_id', CHANNEL_ID);
                             formData.append('photo', imageBlob, 'thumb.jpg');
                             formData.append('caption', finalCaption);
+                            formData.append('parse_mode', 'HTML'); // මෙතැනට HTML parsing එකතු කළා
                             formData.append('reply_markup', JSON.stringify(inlineKeyboard));
 
                             postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
@@ -152,6 +152,7 @@ export default async function handler(req, res) {
                             chat_id: CHANNEL_ID,
                             photo: DEFAULT_BANNER,
                             caption: finalCaption,
+                            parse_mode: 'HTML', // මෙතැනටත් HTML parsing එකතු කළා
                             reply_markup: inlineKeyboard
                         })
                     });
