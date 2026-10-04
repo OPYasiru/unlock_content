@@ -3,11 +3,13 @@ export default async function handler(req, res) {
         return res.status(200).send('Bot is running');
     }
 
-    // Configuration from your settings
     const BOT_TOKEN = "8715294684:AAFdqe3SFZBeKj9i9o1s2D8nDN410csq5U";
     const CHANNEL_ID = "-1003920624467";
     const ADMIN_USER_ID = 5411921025;
     const BASE_URL = "https://unlockcontent.vercel.app";
+
+    // 🔴 Default Caption එක (ඔයාට කැමති default text එක මෙතැනට දෙන්න පුළුවන්)
+    const DEFAULT_CAPTION = "🔥 Hot Lanka New Update!\n⏳ Link will expire soon, download now!";
 
     const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
     const SHIFT = 27;
@@ -33,31 +35,52 @@ export default async function handler(req, res) {
 
     const chatId = message.chat.id;
 
-    // Check admin access
     if (message.from.id !== ADMIN_USER_ID) {
         await sendMsg(chatId, "Access denied. Admin only.");
         return res.status(200).send('Unauthorized');
     }
 
-    // 1. Text commands (/start or link directly)
+    // 1. Text Commands
     if (message.text) {
         const text = message.text.trim();
 
-        if (text.startsWith('/start')) {
-            await sendMsg(chatId, "Send a photo with the link in caption, or forward the video with link.");
+        if (text.startsWith('/start') || text.startsWith('/help')) {
+            const helpMsg = `<b>Hot Lanka Auto Post Bot</b>\n\n` +
+                `<b>How to post:</b>\n` +
+                `1. Send photo/video with FileStore link.\n` +
+                `2. To add custom caption, write your text and add link at the end.\n\n` +
+                `<b>Example:</b>\n` +
+                `<code>Ape aluthma video eka https://t.me/FileStoreSl_bot?start=DW5...</code>`;
+            await sendMsg(chatId, helpMsg);
             return res.status(200).json({ status: 'ok' });
         }
     }
 
-    // 2. Photo, Video, or Document with Caption
+    // 2. Media Upload (Photo, Video, Document)
     if ((message.photo || message.video || message.document) && message.caption) {
-        const captionText = message.caption.trim();
+        const fullCaption = message.caption.trim();
 
+        // Regex මගින් Telegram bot link එක හෝ start code එක හඳුනා ගැනීම
+        const linkMatch = fullCaption.match(/(?:https?:\/\/t\.me\/[^\s]+start=([^\s&]+)|start=([^\s&]+))/i);
+        
         let startCode = "";
-        if (captionText.includes("start=")) {
-            startCode = captionText.split("start=")[1].split("&")[0].split(" ")[0];
+        let finalCaption = DEFAULT_CAPTION; // Default text එක මුලින්ම තෝරා ගනී
+
+        if (linkMatch) {
+            startCode = linkMatch[1] || linkMatch[2];
+            // Link එක අයින් කර ඉතිරි text එකක් ඇත්නම් එය Custom Caption එක ලෙස ගනී
+            const customText = fullCaption.replace(linkMatch[0], '').trim();
+            if (customText.length > 0) {
+                finalCaption = customText;
+            }
         } else {
-            startCode = captionText;
+            // ලින්ක් එකක් නැතිව කෙලින්ම code එකක් පමණක් එවුවහොත්
+            const parts = fullCaption.split(/\s+/);
+            startCode = parts[parts.length - 1];
+            const customText = parts.slice(0, -1).join(' ').trim();
+            if (customText.length > 0) {
+                finalCaption = customText;
+            }
         }
 
         const token = scramble(startCode);
@@ -89,18 +112,19 @@ export default async function handler(req, res) {
                 body: JSON.stringify({
                     chat_id: CHANNEL_ID,
                     photo: photoToSend,
+                    caption: finalCaption,
                     reply_markup: inlineKeyboard
                 })
             });
 
             const resData = await postResponse.json();
             if (resData.ok) {
-                await sendMsg(chatId, "Success! Post published to channel.");
+                await sendMsg(chatId, "✅ Post published successfully with caption!");
             } else {
-                await sendMsg(chatId, `Error: ${resData.description}`);
+                await sendMsg(chatId, `❌ Error: ${resData.description}`);
             }
         } else {
-            await sendMsg(chatId, "No thumbnail found. Please send with an image.");
+            await sendMsg(chatId, "⚠️ No thumbnail found. Please send with an image.");
         }
 
         return res.status(200).json({ status: 'ok' });
