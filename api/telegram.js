@@ -5,7 +5,7 @@ export default async function handler(req, res) {
 
     // 🔴 ඔබගේ තොරතුරු මෙතැනට ඇතුළත් කරන්න
     const BOT_TOKEN = "8715294684:AAFdq0e3SFZBeKj9i9o1s2D8nDN410csq5U";
-    const CHANNEL_ID = "-1004365559436"; // හෝ Channel ID එක (-100xxxxxxx)
+    const CHANNEL_ID = "-1003920624467"; // හෝ Channel ID එක (-100xxxxxxx)
     const ADMIN_USER_ID = 5411921025; // ඔබගේ Telegram User ID එක
     const BASE_URL = "https://unlockcontent.vercel.app";
 
