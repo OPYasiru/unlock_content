@@ -4,6 +4,8 @@ export default async function handler(req, res) {
     const BOT_TOKEN = "8715294684:AAG-avmObwlmLRFVK8LTtpcUbaZtwX_g4g4";
     const CHANNEL_ID = "-1003920624467";
     const ADMIN_USER_ID = 5411921025;
+    const CHANNEL_ID = "-1003920624467"; // Main Channel ID
+    const VIP_CHANNEL_ID = "-1004316350899"; // VIP Channel ID
     const BASE_URL = "https://unlockcontent.vercel.app";
     const DEFAULT_BANNER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80";
 
@@ -138,6 +140,17 @@ export default async function handler(req, res) {
                                 method: 'POST',
                                 body: formData
                             });
+                            // VIP Channel එකට Direct Video එක යැවීම
+await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/copyMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        chat_id: VIP_CHANNEL_ID,
+        from_chat_id: message.chat.id, // DB Channel එකේ ID එක
+        message_id: message.message_id  // වීඩියෝවේ Message ID එක
+    })
+});
+
                         }
                     } catch (uploadErr) {
                         console.error("Upload Error:", uploadErr);
