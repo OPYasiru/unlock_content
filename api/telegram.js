@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') return res.status(200).send('Bot is running');
 
-    const BOT_TOKEN = "8715294684:AAFdq0e3SFZBeKj9i9o1s2D8nDN410csq5U";
+    const BOT_TOKEN = "8803517060:AAHZyUXMhNca90PBcn-iDxhEhITKPU9aFwE";
     const MAIN_CHANNEL_ID = "-1003920624467";
     const DB_CHANNEL_ID = "-1004365559436"; // 🔴 ඔයාගේ FileStore DB චැනල් ID එක මෙතනට දාන්න (උදා: -100123456789)
     const ADMIN_USER_ID = 5411921025;
