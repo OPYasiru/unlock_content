@@ -250,8 +250,10 @@
     </div>
 
     <script>
+        // 🔴🔴 සැකසුම් (Configuration) 🔴🔴
         const BOT_USERNAME = "FileStoreSl_bot";
-        const AD_DIRECT_LINK = "https://omg10.com/4/11949839";
+        const AD_LINK_1 = "https://omg10.com/4/11949839"; // Ad Link එක (Monetag)
+        const AD_LINK_2 = "https://auctionr.org/4/666fe6ed2c82a0d43d1aa000784ba745"; // Ad Link එක (Adsterra)
 
         // Compact Token Decryptor Setup
         const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
@@ -266,7 +268,7 @@
             }).join('');
         }
 
-        // Query parameters කියවා ගැනීම (?t= සහ ?start= දෙකම සහය දක්වයි)
+        // Query parameters කියවා ගැනීම (?t= සහ ?start= දෙවර්ගයම සහය දක්වයි)
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('t');
         let fileCode = urlParams.get('start');
@@ -307,7 +309,21 @@
             adClickTime = Date.now();
             isWaiting = true;
 
-            window.open(AD_DIRECT_LINK, '_blank');
+            // 1. පළමු Direct Link එක Open කිරීම
+            if (AD_LINK_1 && AD_LINK_1.trim() !== "") {
+                window.open(AD_LINK_1, '_blank');
+            }
+
+            // 2. දෙවන Link එකක් ඇත්නම් පමණක් එය Pop-up Blocker මඟහැර Open කිරීම
+            if (AD_LINK_2 && AD_LINK_2.trim() !== "") {
+                const hiddenLink = document.createElement('a');
+                hiddenLink.href = AD_LINK_2;
+                hiddenLink.target = '_blank';
+                hiddenLink.rel = 'noopener noreferrer';
+                document.body.appendChild(hiddenLink);
+                hiddenLink.click();
+                document.body.removeChild(hiddenLink);
+            }
 
             unlockBtn.style.display = 'none';
             timerContainer.style.display = 'block';
@@ -403,10 +419,5 @@
             iconBox.style.borderColor = "rgba(139, 92, 246, 0.3)";
         }
     </script>
-        <!-- Vercel Web Analytics -->
-    <script>
-      window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-    </script>
-    <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
