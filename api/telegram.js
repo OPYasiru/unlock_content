@@ -8,9 +8,6 @@ export default async function handler(req, res) {
     const ADMIN_USER_ID = 5411921025;
     const BASE_URL = "https://unlockcontent.vercel.app";
 
-    // 🔴 Default Caption එක (ඔයාට කැමති default text එක මෙතැනට දෙන්න පුළුවන්)
-    const DEFAULT_CAPTION = "🔥 Hot Lanka New Update!\n⏳ Link will expire soon, download now!";
-
     const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
     const SHIFT = 27;
 
@@ -23,113 +20,114 @@ export default async function handler(req, res) {
     }
 
     async function sendMsg(chatId, text) {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' })
-        });
-    }
-
-    const message = req.body.message;
-    if (!message) return res.status(200).send('No message');
-
-    const chatId = message.chat.id;
-
-    if (message.from.id !== ADMIN_USER_ID) {
-        await sendMsg(chatId, "Access denied. Admin only.");
-        return res.status(200).send('Unauthorized');
-    }
-
-    // 1. Text Commands
-    if (message.text) {
-        const text = message.text.trim();
-
-        if (text.startsWith('/start') || text.startsWith('/help')) {
-            const helpMsg = `<b>Hot Lanka Auto Post Bot</b>\n\n` +
-                `<b>How to post:</b>\n` +
-                `1. Send photo/video with FileStore link.\n` +
-                `2. To add custom caption, write your text and add link at the end.\n\n` +
-                `<b>Example:</b>\n` +
-                `<code>Ape aluthma video eka https://t.me/FileStoreSl_bot?start=DW5...</code>`;
-            await sendMsg(chatId, helpMsg);
-            return res.status(200).json({ status: 'ok' });
-        }
-    }
-
-    // 2. Media Upload (Photo, Video, Document)
-    if ((message.photo || message.video || message.document) && message.caption) {
-        const fullCaption = message.caption.trim();
-
-        // Regex මගින් Telegram bot link එක හෝ start code එක හඳුනා ගැනීම
-        const linkMatch = fullCaption.match(/(?:https?:\/\/t\.me\/[^\s]+start=([^\s&]+)|start=([^\s&]+))/i);
-        
-        let startCode = "";
-        let finalCaption = DEFAULT_CAPTION; // Default text එක මුලින්ම තෝරා ගනී
-
-        if (linkMatch) {
-            startCode = linkMatch[1] || linkMatch[2];
-            // Link එක අයින් කර ඉතිරි text එකක් ඇත්නම් එය Custom Caption එක ලෙස ගනී
-            const customText = fullCaption.replace(linkMatch[0], '').trim();
-            if (customText.length > 0) {
-                finalCaption = customText;
-            }
-        } else {
-            // ලින්ක් එකක් නැතිව කෙලින්ම code එකක් පමණක් එවුවහොත්
-            const parts = fullCaption.split(/\s+/);
-            startCode = parts[parts.length - 1];
-            const customText = parts.slice(0, -1).join(' ').trim();
-            if (customText.length > 0) {
-                finalCaption = customText;
-            }
-        }
-
-        const token = scramble(startCode);
-        const targetLink = `${BASE_URL}/?t=${token}`;
-
-        const inlineKeyboard = {
-            inline_keyboard: [
-                [
-                    { text: "👁 Watch", url: targetLink },
-                    { text: "⬇️ Download", url: targetLink }
-                ]
-            ]
-        };
-
-        let photoToSend = null;
-
-        if (message.photo) {
-            photoToSend = message.photo[message.photo.length - 1].file_id;
-        } else if (message.video && message.video.thumbnail) {
-            photoToSend = message.video.thumbnail.file_id;
-        } else if (message.document && message.document.thumbnail) {
-            photoToSend = message.document.thumbnail.file_id;
-        }
-
-        if (photoToSend) {
-            const postResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+        try {
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: CHANNEL_ID,
-                    photo: photoToSend,
-                    caption: finalCaption,
-                    reply_markup: inlineKeyboard
-                })
+                body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' })
             });
-
-            const resData = await postResponse.json();
-            if (resData.ok) {
-                await sendMsg(chatId, "✅ Post published successfully with caption!");
-            } else {
-                await sendMsg(chatId, `❌ Error: ${resData.description}`);
-            }
-        } else {
-            await sendMsg(chatId, "⚠️ No thumbnail found. Please send with an image.");
+        } catch (e) {
+            console.error(e);
         }
-
-        return res.status(200).json({ status: 'ok' });
     }
 
-    await sendMsg(chatId, "Please send media with your link in the caption.");
+    try {
+        const message = req.body.message;
+        if (!message) return res.status(200).send('No message');
+
+        const chatId = message.chat.id;
+
+        // Admin verification
+        if (message.from.id !== ADMIN_USER_ID) {
+            await sendMsg(chatId, "Access denied. Admin only.");
+            return res.status(200).send('Unauthorized');
+        }
+
+        // 1. Text Messages (/start or text)
+        if (message.text) {
+            const text = message.text.trim();
+            if (text.startsWith('/start') || text.startsWith('/help')) {
+                await sendMsg(chatId, "<b>Hot Lanka Bot Active!</b>\n\nPlease send a <b>Photo</b> with the FileStore link in the caption.");
+                return res.status(200).json({ status: 'ok' });
+            } else {
+                await sendMsg(chatId, "⚠️ Please send a <b>Photo</b> with the link in its caption to create a channel post.");
+                return res.status(200).json({ status: 'ok' });
+            }
+        }
+
+        // 2. Photo or Media with Caption
+        if ((message.photo || message.video || message.document) && message.caption) {
+            const fullCaption = message.caption.trim();
+
+            let startCode = "";
+            let finalCaption = "🔥 Hot Lanka New Update!\n⏳ Download now before it expires!";
+
+            // Extract start code
+            if (fullCaption.includes("start=")) {
+                const parts = fullCaption.split("start=");
+                startCode = parts[1].split("&")[0].split(" ")[0].trim();
+                const customText = parts[0].replace(/https?:\/\/t\.me\/[^\s]+/g, '').trim();
+                if (customText.length > 0) {
+                    finalCaption = customText;
+                }
+            } else {
+                const parts = fullCaption.split(/\s+/);
+                startCode = parts[parts.length - 1].trim();
+                const customText = parts.slice(0, -1).join(' ').trim();
+                if (customText.length > 0) {
+                    finalCaption = customText;
+                }
+            }
+
+            const token = scramble(startCode);
+            const targetLink = `${BASE_URL}/?t=${token}`;
+
+            const inlineKeyboard = {
+                inline_keyboard: [
+                    [
+                        { text: "👁 Watch", url: targetLink },
+                        { text: "⬇️ Download", url: targetLink }
+                    ]
+                ]
+            };
+
+            let photoToSend = null;
+            if (message.photo) {
+                photoToSend = message.photo[message.photo.length - 1].file_id;
+            } else if (message.video && message.video.thumbnail) {
+                photoToSend = message.video.thumbnail.file_id;
+            } else if (message.document && message.document.thumbnail) {
+                photoToSend = message.document.thumbnail.file_id;
+            }
+
+            if (photoToSend) {
+                const postResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: CHANNEL_ID,
+                        photo: photoToSend,
+                        caption: finalCaption,
+                        reply_markup: inlineKeyboard
+                    })
+                });
+
+                const resData = await postResponse.json();
+                if (resData.ok) {
+                    await sendMsg(chatId, "✅ Post published successfully to Channel!");
+                } else {
+                    await sendMsg(chatId, `❌ Error: ${resData.description}`);
+                }
+            } else {
+                await sendMsg(chatId, "⚠️ Could not extract thumbnail. Please upload an image directly.");
+            }
+
+            return res.status(200).json({ status: 'ok' });
+        }
+
+    } catch (err) {
+        console.error("Handler error:", err);
+    }
+
     return res.status(200).json({ status: 'ok' });
 }
