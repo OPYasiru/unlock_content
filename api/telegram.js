@@ -3,10 +3,10 @@ export default async function handler(req, res) {
         return res.status(200).send('Bot is running');
     }
 
-    // 🔴 ඔබගේ තොරතුරු මෙතැනට ඇතුළත් කරන්න
-    const BOT_TOKEN = "8715294684:AAFdq0e3SFZBeKj9i9o1s2D8nDN410csq5U";
-    const CHANNEL_ID = "-1003920624467"; // හෝ Channel ID එක (-100xxxxxxx)
-    const ADMIN_USER_ID = 5411921025; // ඔබගේ Telegram User ID එක
+    // Configuration from your settings
+    const BOT_TOKEN = "8715294684:AAFdqe3SFZBeKj9i9o1s2D8nDN410csq5U";
+    const CHANNEL_ID = "-1003920624467";
+    const ADMIN_USER_ID = 5411921025;
     const BASE_URL = "https://unlockcontent.vercel.app";
 
     const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
@@ -33,30 +33,24 @@ export default async function handler(req, res) {
 
     const chatId = message.chat.id;
 
-    // අනවශ්‍ය අයගෙන් එන මැසේජ් වැළැක්වීම
+    // Check admin access
     if (message.from.id !== ADMIN_USER_ID) {
-        await sendMsg(chatId, "⛔ ඔබට මෙම Bot භාවිතා කිරීමට අවසර නැත.");
+        await sendMsg(chatId, "Access denied. Admin only.");
         return res.status(200).send('Unauthorized');
     }
 
-    // 1. Text Commands හැසිරවීම (/start, /help)
+    // 1. Text commands (/start or link directly)
     if (message.text) {
         const text = message.text.trim();
 
-        if (text.startsWith('/start') || text.startsWith('/help')) {
-            const helpText = `👋 <b>Hot Lanka Auto-Post Bot සක්‍රීයයි!</b>\n\n` +
-                `<b>භාවිතා කරන ආකාරය:</b>\n` +
-                `1. පෝස්ට් එකට අවශ්‍ය Photo එකක් Attach කරන්න.\n` +
-                `2. එහි Caption එකට FileStore link එක (හෝ Code එක) දමා Send කරන්න.\n\n` +
-                `<i>Bot විසින් ස්වයංක්‍රීයව ලින්ක් එක Encrypt කර Channel එකට Post කරනු ඇත.</i>`;
-            await sendMsg(chatId, helpText);
+        if (text.startsWith('/start')) {
+            await sendMsg(chatId, "Send a photo with the link in caption, or forward the video with link.");
             return res.status(200).json({ status: 'ok' });
         }
     }
 
-    // 2. Photo එකක් Caption එකක් සමඟ එවීම
-    if (message.photo && message.caption) {
-        const fileId = message.photo[message.photo.length - 1].file_id;
+    // 2. Photo, Video, or Document with Caption
+    if ((message.photo || message.video || message.document) && message.caption) {
         const captionText = message.caption.trim();
 
         let startCode = "";
@@ -78,28 +72,40 @@ export default async function handler(req, res) {
             ]
         };
 
-        const postResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: CHANNEL_ID,
-                photo: fileId,
-                reply_markup: inlineKeyboard
-            })
-        });
+        let photoToSend = null;
 
-        const resData = await postResponse.json();
+        if (message.photo) {
+            photoToSend = message.photo[message.photo.length - 1].file_id;
+        } else if (message.video && message.video.thumbnail) {
+            photoToSend = message.video.thumbnail.file_id;
+        } else if (message.document && message.document.thumbnail) {
+            photoToSend = message.document.thumbnail.file_id;
+        }
 
-        if (resData.ok) {
-            await sendMsg(chatId, "✅ <b>Post එක සාර්ථකව Hot Lanka Channel එකට පළ විය!</b>");
+        if (photoToSend) {
+            const postResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: CHANNEL_ID,
+                    photo: photoToSend,
+                    reply_markup: inlineKeyboard
+                })
+            });
+
+            const resData = await postResponse.json();
+            if (resData.ok) {
+                await sendMsg(chatId, "Success! Post published to channel.");
+            } else {
+                await sendMsg(chatId, `Error: ${resData.description}`);
+            }
         } else {
-            await sendMsg(chatId, `❌ <b>Error:</b> ${resData.description}\n(Bot චැනල් එකේ Admin දැයි පරීක්ෂා කරන්න)`);
+            await sendMsg(chatId, "No thumbnail found. Please send with an image.");
         }
 
         return res.status(200).json({ status: 'ok' });
     }
 
-    // වෙනත් ඕනෑම පණිවිඩයක් ආ විට
-    await sendMsg(chatId, "⚠️️ කරුණාකර Photo එකක් තෝරා එහි Caption එකට Link/Code එක දමා එවන්න.");
+    await sendMsg(chatId, "Please send media with your link in the caption.");
     return res.status(200).json({ status: 'ok' });
 }
