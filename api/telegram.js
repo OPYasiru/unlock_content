@@ -1,14 +1,14 @@
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(200).send('Bot is running');
+    if (req.method !== 'POST') return res.status(200).send('Bot Running');
 
-    const BOT_TOKEN = "8715294684:AAG-avmObwlmLRFVK8LTtpcUbaZtwX_g4g4"; // ඔයාගේ අලුත් Post Bot Token එක
-    const MAIN_CHANNEL_ID = "-1003920624467"; // ප්‍රධාන චැනල් එක
-    const DB_CHANNEL_ID = "-1004365559436"; // FileStore DB චැනල් එක
-    const ADMIN_USER_ID = 5411921025; // ඔයාගේ ID එක
+    const BOT_TOKEN = "8715294684:AAG-avmObwlmLRFVK8LTtpcUbaZtwX_g4g4"; // Post Bot Token
+    const MAIN_CHANNEL_ID = "-1003920624467"; // Main Channel
+    const DB_CHANNEL_ID = "-1004365559436"; // FileStore DB Channel
+    const ADMIN_USER_ID = 5411921025; 
     const BASE_URL = "https://unlockcontent.vercel.app";
     const DEFAULT_BANNER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80";
 
-    // Upstash Redis සම්බන්ධතාවය
+    // Upstash Redis Setup
     const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
     const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
         }
     }
 
-    // Compact Scrambler (WebApp එකට ගැළපෙන Token Scrambler එක)
+    // Token Scrambler for WebApp
     const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
     const SHIFT = 27;
     function scramble(str) {
@@ -52,19 +52,30 @@ export default async function handler(req, res) {
         if (!body) return res.status(200).json({ ok: true });
 
         // ==============================================================
-        // 1. FileStore DB එකට අලුතින් Video එකක් වැටුණු විට Thumbnail එක Redis හි Save වීම
+        // 1. AUTO THUMBNAIL CAPTURE (DB එකට එන ඕනෑම Post එකකින්)
         // ==============================================================
-        const channelPost = body.channel_post;
-        if (channelPost && String(channelPost.chat.id) === DB_CHANNEL_ID) {
+        const post = body.channel_post || body.message;
+        if (post && String(post.chat.id) === DB_CHANNEL_ID) {
             let thumb = null;
-            if (channelPost.video && (channelPost.video.thumbnail || channelPost.video.thumb)) {
-                thumb = (channelPost.video.thumbnail && channelPost.video.thumbnail.file_id) || (channelPost.video.thumb && channelPost.video.thumb.file_id);
-            } else if (channelPost.document && (channelPost.document.thumbnail || channelPost.document.thumb)) {
-                thumb = (channelPost.document.thumbnail && channelPost.document.thumbnail.file_id) || (channelPost.document.thumb && channelPost.document.thumb.file_id);
-            } else if (channelPost.photo && channelPost.photo.length > 0) {
-                thumb = channelPost.photo[channelPost.photo.length - 1].file_id;
+
+            // Video එකකින් Thumbnail එක ගැනීම
+            if (post.video) {
+                if (post.video.thumbnail) thumb = post.video.thumbnail.file_id;
+                else if (post.video.thumb) thumb = post.video.thumb.file_id;
+            }
+            // Document එකක් ලෙස Forward වී ඇත්නම් Thumbnail එක ගැනීම
+            else if (post.document) {
+                if (post.document.thumbnail) thumb = post.document.thumbnail.file_id;
+                else if (post.document.thumb) thumb = post.document.thumb.file_id;
+            }
+            // Animation / GIF හෝ Photo නම්
+            else if (post.animation && post.animation.thumbnail) {
+                thumb = post.animation.thumbnail.file_id;
+            } else if (post.photo && post.photo.length > 0) {
+                thumb = post.photo[post.photo.length - 1].file_id;
             }
 
+            // Thumbnail එක ලැබුණොත් Redis එකේ Auto Save කරනවා
             if (thumb) {
                 await kvSet("latest_thumbnail_id", thumb);
             }
@@ -72,7 +83,7 @@ export default async function handler(req, res) {
         }
 
         // ==============================================================
-        // 2. Admin විසින් Post Bot වෙත Link එක එවූ විට Post එක පළ වීම
+        // 2. AUTO POST GENERATOR (Admin ලින්ක් එක එවූ සැනින්)
         // ==============================================================
         const msg = body.message;
         if (!msg) return res.status(200).json({ ok: true });
@@ -96,10 +107,11 @@ export default async function handler(req, res) {
                 ] 
             };
 
-            // Upstash Redis එකේ ඇති Thumbnail එක ලබා ගැනීම
+            // Redis එකේ Save වී ඇති Thumbnail එක කෙලින්ම ලබා ගැනීම
             let thumbId = await kvGet("latest_thumbnail_id");
 
             let postRes;
+            // Thumbnail එක තිබේ නම් එයින් කෙලින්ම Post කිරීම
             if (thumbId) {
                 postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                     method: 'POST',
@@ -114,7 +126,7 @@ export default async function handler(req, res) {
                 }).then(r => r.json());
             }
 
-            // කිසිම Thumbnail එකක් නොලැබුණහොත් Default Banner එක යොදා ගැනීම
+            // නොලැබුණහොත් පමණක් Default Banner එක යොදා ගැනීම
             if (!postRes || !postRes.ok) {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                     method: 'POST',
@@ -129,9 +141,7 @@ export default async function handler(req, res) {
                 });
             }
 
-            // Post වූ පසු Thumbnail එක Redis වෙතින් ඉවත් කිරීම (ඊළඟ එකට පැටලෙන්නේ නැති වීමට)
-            await kvSet("latest_thumbnail_id", null);
-
+            // සාර්ථක පණිවිඩය Admin වෙත
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
