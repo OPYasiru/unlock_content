@@ -9,7 +9,6 @@ export default async function handler(req, res) {
     const BASE_URL = "https://unlockcontent.vercel.app";
     const DEFAULT_BANNER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80";
 
-    // Vercel KV / Upstash Credentials
     const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
     const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -36,29 +35,46 @@ export default async function handler(req, res) {
         }
     }
 
-    // KV එකේ Data Save කිරීම
-    async function saveLatestThumbnail(fileId) {
+    // Video Thumbnail එකේ Download URL එක ලබා ගැනීම
+    async function getFileUrl(fileId) {
+        try {
+            const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
+            const data = await res.json();
+            if (data.ok && data.result.file_path) {
+                return `https://api.telegram.org/file/bot${BOT_TOKEN}/${data.result.file_path}`;
+            }
+        } catch (e) {
+            console.error("GetFile Error:", e);
+        }
+        return null;
+    }
+
+    // KV එකේ Image URL එක Save කිරීම
+    async function saveLatestThumbnail(url) {
         if (!KV_URL || !KV_TOKEN) return;
         try {
-            await fetch(`${KV_URL}/set/latest_thumbnail/${fileId}`, {
-                headers: { Authorization: `Bearer ${KV_TOKEN}` }
+            await fetch(KV_URL, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(["SET", "latest_thumbnail", url])
             });
         } catch (e) {
             console.error("KV Set Error:", e);
         }
     }
 
-    // KV එකෙන් Data ලබා ගැනීම
+    // KV එකෙන් Image URL එක ලබා ගැනීම
     async function getLatestThumbnail() {
         if (!KV_URL || !KV_TOKEN) return null;
         try {
-            const resp = await fetch(`${KV_URL}/get/latest_thumbnail`, {
-                headers: { Authorization: `Bearer ${KV_TOKEN}` }
+            const resp = await fetch(KV_URL, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(["GET", "latest_thumbnail"])
             });
             const data = await resp.json();
             return data.result;
         } catch (e) {
-            console.error("KV Get Error:", e);
             return null;
         }
     }
@@ -67,7 +83,7 @@ export default async function handler(req, res) {
         const body = req.body;
         if (!body) return res.status(200).json({ ok: true });
 
-        // 1. FileStore DB Channel එකට Video එකක් වැටුණු විට Thumbnail එක Cache කර ගැනීම
+        // 1. FileStore DB Channel එකට Video එකක් වැටුණු විට ඒකේ URL එක හදාගෙන Save කිරීම
         if (body.channel_post) {
             const post = body.channel_post;
             let thumbId = null;
@@ -81,12 +97,15 @@ export default async function handler(req, res) {
             }
 
             if (thumbId) {
-                await saveLatestThumbnail(thumbId);
+                const fileUrl = await getFileUrl(thumbId);
+                if (fileUrl) {
+                    await saveLatestThumbnail(fileUrl);
+                }
             }
             return res.status(200).json({ ok: true });
         }
 
-        // 2. Bot වෙත Admin ගෙන් ලැබෙන Direct / Forwarded Messages
+        // 2. ඔයා Link එක Bot ට යැව්වම Post එක හැදීම
         if (body.message) {
             const msg = body.message;
             const chatId = msg.chat.id;
@@ -97,12 +116,6 @@ export default async function handler(req, res) {
 
             const textContent = msg.text || msg.caption || "";
 
-            if (textContent.startsWith('/start')) {
-                await sendMsg(chatId, "<b>Hot Lanka Bot Active!</b>\n\nFileStore Bot වෙතින් එන Link එක කෙලින්ම එවන්න.");
-                return res.status(200).json({ ok: true });
-            }
-
-            // Link එකෙන් Code එක හඳුනා ගැනීම
             if (textContent.includes("start=")) {
                 const startCode = textContent.split("start=")[1].split("&")[0].split(/\s+/)[0].trim();
                 const token = scramble(startCode);
@@ -117,9 +130,9 @@ export default async function handler(req, res) {
                     ]
                 };
 
-                // KV Database එකෙන් DB Channel එකට අන්තිමට වැටුණු Thumbnail එක ලබා ගැනීම
-                const cachedThumbnail = await getLatestThumbnail();
-                const photoToSend = cachedThumbnail || DEFAULT_BANNER;
+                // KV Database එකෙන් Image URL එක ගැනීම
+                const cachedUrl = await getLatestThumbnail();
+                const photoToSend = cachedUrl || DEFAULT_BANNER;
 
                 const postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                     method: 'POST',
