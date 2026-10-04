@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(200).send('Post Bot Running');
 
-    const BOT_TOKEN = "8715294684:AAFdq0e3SFZBeKj9i9o1s2D8nDN410csq5U"; // @HotLanka_Bot
+    const BOT_TOKEN = "8715294684:AAG-avmObwlmLRFVK8LTtpcUbaZtwX_g4g4"; // ඔයාගේ අලුත් Post Bot Token එක
     const MAIN_CHANNEL_ID = "-1003920624467"; // ප්‍රධාන චැනල් එක
     const DB_CHANNEL_ID = "-1004365559436"; // FileStore DB චැනල් එක
     const ADMIN_USER_ID = 5411921025; // ඔයාගේ ID එක
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         const chatId = msg.chat.id;
         const text = msg.text || msg.caption || "";
 
-        // Admin ට පමණක් අවසර දීම
+        // Admin ට පමණක් ඉඩ දීම
         if (chatId !== ADMIN_USER_ID) return res.status(200).json({ ok: true });
 
         // FileStore Bot ගෙන් එන ලින්ක් එක අඳුනාගැනීම (t.me/...start=XXXX)
@@ -47,9 +47,9 @@ export default async function handler(req, res) {
 
             let thumbId = null;
 
-            // 1. DB චැනල් එකට අන්තිමට ආපු Message එක අරගෙන Thumbnail එක ගැනීම
-            // (DB එකට dummy message එකක් යවා එහි ID එකෙන් අන්තිම Message එක සොයාගැනීම)
+            // 1. DB චැනල් එකට අන්තිමට වැටුණු වීඩියෝව සොයා Thumbnail එක ලබා ගැනීම
             try {
+                // DB චැනල් එකේ අලුත්ම Message ID එක හඳුනාගැනීම
                 const probeRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -58,51 +58,48 @@ export default async function handler(req, res) {
 
                 if (probeRes.ok) {
                     const latestId = probeRes.result.message_id;
-                    // යවපු probe message එක වහාම මකා දැමීම
+                    // Probe මැසේජ් එක වහාම මකා දැමීම
                     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ chat_id: DB_CHANNEL_ID, message_id: latestId })
                     });
 
-                    // ඊට කලින් DB එකට වැටුණු අන්තිම වීඩියෝ 5 පරීක්ෂා කර Thumbnail එක සොයාගැනීම
-                    for (let checkId = latestId - 1; checkId >= latestId - 5; checkId--) {
-                        const copyRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/copyMessage`, {
+                    // අන්තිමට DB එකට වැටුණු මැසේජ් 6 පරීක්ෂා කිරීම
+                    for (let checkId = latestId - 1; checkId >= latestId - 6; checkId--) {
+                        const fwdRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ chat_id: ADMIN_USER_ID, from_chat_id: DB_CHANNEL_ID, message_id: checkId })
                         }).then(r => r.json());
 
-                        if (copyRes.ok) {
-                            const copiedMsgId = copyRes.result.message_id;
+                        if (fwdRes.ok) {
+                            const fMsg = fwdRes.result;
 
-                            // Message විස්තර බලා Thumbnail එක ගැනීම සඳහා Forward කිරීම
-                            const fwd = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ chat_id: ADMIN_USER_ID, from_chat_id: DB_CHANNEL_ID, message_id: checkId })
-                            }).then(r => r.json());
-
-                            if (fwd.ok) {
-                                const fMsg = fwd.result;
-                                if (fMsg.video) thumbId = (fMsg.video.thumbnail && fMsg.video.thumbnail.file_id) || (fMsg.video.thumb && fMsg.video.thumb.file_id);
-                                else if (fMsg.document) thumbId = (fMsg.document.thumbnail && fMsg.document.thumbnail.file_id) || (fMsg.document.thumb && fMsg.document.thumb.file_id);
-                                else if (fMsg.photo) thumbId = fMsg.photo[fMsg.photo.length - 1].file_id;
-
-                                // එවපු මැසේජ් ක්ෂණිකව මකා දැමීම
-                                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ADMIN_USER_ID, message_id: fMsg.message_id }) });
+                            // Video, Document හෝ Photo වලින් නිවැරදි Thumbnail එක ගැනීම
+                            if (fMsg.video && (fMsg.video.thumbnail || fMsg.video.thumb)) {
+                                thumbId = (fMsg.video.thumbnail && fMsg.video.thumbnail.file_id) || (fMsg.video.thumb && fMsg.video.thumb.file_id);
+                            } else if (fMsg.document && (fMsg.document.thumbnail || fMsg.document.thumb)) {
+                                thumbId = (fMsg.document.thumbnail && fMsg.document.thumbnail.file_id) || (fMsg.document.thumb && fMsg.document.thumb.file_id);
+                            } else if (fMsg.photo && fMsg.photo.length > 0) {
+                                thumbId = fMsg.photo[fMsg.photo.length - 1].file_id;
                             }
 
-                            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ADMIN_USER_ID, message_id: copiedMsgId }) });
+                            // Admin චැට් එකට ආ මැසේජ් එක ක්ෂණිකව මකා දැමීම
+                            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ chat_id: ADMIN_USER_ID, message_id: fMsg.message_id })
+                            });
 
-                            if (thumbId) break; // Thumbnail එක හමුවූ පසු loop එක නවත්වන්න
+                            if (thumbId) break; // Thumbnail එක හමු වූ සැනින් නවත්වන්න
                         }
                     }
                 }
             } catch (e) {}
 
             let postRes;
-            // 2. DB එකෙන් හමුවූ Thumbnail එකෙන් Main Channel එකට පෝස්ට් කිරීම
+            // 2. Thumbnail එක ඇත්නම් එයින් Main Channel එකට පළ කිරීම
             if (thumbId) {
                 postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                     method: 'POST',
@@ -117,7 +114,7 @@ export default async function handler(req, res) {
                 }).then(r => r.json());
             }
 
-            // 3. යම් හෙයකින් Thumbnail එකක් නැතිනම් පමණක් Default Banner එක යොදා ගැනීම
+            // 3. Thumbnail නොමැති නම් පමණක් Default Banner එක යෙදීම
             if (!postRes || !postRes.ok) {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                     method: 'POST',
@@ -132,7 +129,7 @@ export default async function handler(req, res) {
                 });
             }
 
-            // Admin ට Confirmation ලින්ක් එක එවන්න
+            // Admin ට සාර්ථක බව දැන්වීම
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
