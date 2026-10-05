@@ -1,87 +1,147 @@
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(200).send('Bot is running');
+    if (req.method !== 'POST') {
+        return res.status(200).send('Bot is running');
+    }
 
-    const BOT_TOKEN = "8715294684:AAG-avmObwlmLRFVK8LTtpcUbaZtwX_g4g4";
-    const CHANNEL_ID = "-1003920624467"; // Main Channel ID
-    const VIP_CHANNEL_ID = "-1004316350899"; // VIP Channel ID
+    const BOT_TOKEN = process.env.BOT_TOKEN;
+
+    if (!BOT_TOKEN) {
+        return res.status(500).json({
+            ok: false,
+            error: "BOT_TOKEN environment variable is missing"
+        });
+    }
+
+    const CHANNEL_ID = "-1003920624467";
+    const VIP_CHANNEL_ID = "-1004316350899";
     const ADMIN_USER_ID = 5411921025;
     const BASE_URL = "https://unlockcontent.vercel.app";
-    const DEFAULT_BANNER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80";
 
-    const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-    const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+    const DEFAULT_BANNER =
+        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80";
 
-    const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
+    const KV_URL =
+        process.env.KV_REST_API_URL ||
+        process.env.UPSTASH_REDIS_REST_URL;
+
+    const KV_TOKEN =
+        process.env.KV_REST_API_TOKEN ||
+        process.env.UPSTASH_REDIS_REST_TOKEN;
+
+    const CHARS =
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
+
     const SHIFT = 27;
 
     function scramble(str) {
         return str.split('').map(c => {
-            let idx = CHARS.indexOf(c);
+            const idx = CHARS.indexOf(c);
+
             if (idx === -1) return c;
+
             return CHARS[(idx + SHIFT) % CHARS.length];
         }).join('');
     }
 
     async function sendMsg(chatId, text) {
         try {
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' })
-            });
-        } catch (e) { console.error(e); }
+            await fetch(
+                `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text,
+                        parse_mode: 'HTML'
+                    })
+                }
+            );
+        } catch (e) {
+            console.error("Send Message Error:", e);
+        }
     }
 
     async function kvSet(key, value) {
         if (!KV_URL || !KV_TOKEN) return;
+
         try {
             await fetch(KV_URL, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
+                headers: {
+                    Authorization: `Bearer ${KV_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(["SET", key, value])
             });
-        } catch (e) { console.error("KV Set Error:", e); }
+        } catch (e) {
+            console.error("KV Set Error:", e);
+        }
     }
 
     async function kvGet(key) {
         if (!KV_URL || !KV_TOKEN) return null;
+
         try {
             const resp = await fetch(KV_URL, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
+                headers: {
+                    Authorization: `Bearer ${KV_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(["GET", key])
             });
+
             const data = await resp.json();
             return data.result;
-        } catch (e) { return null; }
+        } catch (e) {
+            console.error("KV Get Error:", e);
+            return null;
+        }
     }
 
     try {
         const body = req.body;
-        if (!body) return res.status(200).json({ ok: true });
 
-        // DB Channel එකට Video හෝ Post එකක් වැටුණු විට ක්‍රියාත්මක වන කොටස
+        if (!body) {
+            return res.status(200).json({ ok: true });
+        }
+
+        // Database channel posts -> VIP channel copy
         if (body.channel_post) {
             const post = body.channel_post;
+
             let thumbId = null;
 
-            if (post.video && post.video.thumbnail) thumbId = post.video.thumbnail.file_id;
-            else if (post.document && post.document.thumbnail) thumbId = post.document.thumbnail.file_id;
-            else if (post.photo) thumbId = post.photo[post.photo.length - 1].file_id;
+            if (post.video && post.video.thumbnail) {
+                thumbId = post.video.thumbnail.file_id;
+            } else if (post.document && post.document.thumbnail) {
+                thumbId = post.document.thumbnail.file_id;
+            } else if (post.photo) {
+                thumbId = post.photo[post.photo.length - 1].file_id;
+            }
 
-            if (thumbId) await kvSet("latest_thumbnail_id", thumbId);
+            if (thumbId) {
+                await kvSet("latest_thumbnail_id", thumbId);
+            }
 
-            // DB Channel එකට එන වීඩියෝ/පෝස්ට් එක කෙලින්ම VIP Channel එකට Forward Tags නැතිව Auto Copy කිරීම
             try {
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/copyMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: VIP_CHANNEL_ID,
-                        from_chat_id: post.chat.id,
-                        message_id: post.message_id
-                    })
-                });
+                await fetch(
+                    `https://api.telegram.org/bot${BOT_TOKEN}/copyMessage`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            chat_id: VIP_CHANNEL_ID,
+                            from_chat_id: post.chat.id,
+                            message_id: post.message_id
+                        })
+                    }
+                );
             } catch (vipErr) {
                 console.error("VIP Copy Error:", vipErr);
             }
@@ -93,94 +153,204 @@ export default async function handler(req, res) {
             const msg = body.message;
             const chatId = msg.chat.id;
 
-            if (msg.from && msg.from.id !== ADMIN_USER_ID) return res.status(200).json({ ok: true });
+            // Admin-only commands and posts
+            if (msg.from && msg.from.id !== ADMIN_USER_ID) {
+                return res.status(200).json({ ok: true });
+            }
 
             const textContent = msg.text || msg.caption || "";
 
+            // Update default caption
             if (textContent.startsWith('/settext ')) {
-                const newText = textContent.replace('/settext ', '').trim();
+                const newText = textContent
+                    .replace('/settext ', '')
+                    .trim();
+
                 await kvSet("default_caption", newText);
-                await sendMsg(chatId, `✅ <b>Default text updated successfully:</b>\n\n${newText}`);
+
+                await sendMsg(
+                    chatId,
+                    `✅ <b>Default text updated successfully:</b>\n\n${newText}`
+                );
+
                 return res.status(200).json({ ok: true });
             }
 
-            if (textContent.startsWith('/start') || textContent.startsWith('/help')) {
-                await sendMsg(chatId, "<b>Hot Lanka Bot Active!</b>\n\n- Forward a FileStore link to create a post with default text.\n- Use <code>/settext [your text]</code> to change the default caption.\n- To use a custom caption for a single post, type your text and paste the link at the end of it.");
+            // Help command
+            if (
+                textContent.startsWith('/start') ||
+                textContent.startsWith('/help')
+            ) {
+                await sendMsg(
+                    chatId,
+                    "<b>Hot Lanka Bot Active!</b>\n\n" +
+                    "- Send an image with custom text and a File Store link in its caption.\n" +
+                    "- Use <code>/settext Your default caption</code> to update default text.\n" +
+                    "- Send a link with custom text to create a post.\n" +
+                    "- Watch and Download buttons are added automatically."
+                );
+
                 return res.status(200).json({ ok: true });
             }
 
-            if (textContent.includes("start=")) {
-                const startCode = textContent.split("start=")[1].split("&")[0].split(/\s+/)[0].trim();
+            // Find Telegram File Store start link
+            const startMatch = textContent.match(
+                /[?&]start=([A-Za-z0-9_-]+)/
+            );
+
+            if (startMatch) {
+                const startCode = startMatch[1];
+
                 const token = scramble(startCode);
+
                 const targetLink = `${BASE_URL}/?t=${token}`;
 
+                // Watch and Download buttons
                 const inlineKeyboard = {
                     inline_keyboard: [
-                        [{ text: "👁 Watch", url: targetLink }, { text: "⬇️ Download", url: targetLink }]
+                        [
+                            {
+                                text: "👁 Watch",
+                                url: targetLink
+                            },
+                            {
+                                text: "⬇️ Download",
+                                url: targetLink
+                            }
+                        ]
                     ]
                 };
 
+                // Use default text first
                 let finalCaption = await kvGet("default_caption");
+
                 if (!finalCaption) {
-                    finalCaption = "<blockquote>🔥 Hot Lanka New Update! ❞</blockquote>\n<blockquote>⏳ Link will expire soon, download now! ❞</blockquote>";
+                    finalCaption =
+                        "<blockquote>🔥 Hot Lanka New Update! ❞</blockquote>\n" +
+                        "<blockquote>⏳ Link will expire soon, download now! ❞</blockquote>";
                 }
 
-                if (!textContent.includes("Here is your universal link:") && !textContent.includes("Note:The same content")) {
-                    const customText = textContent.replace(/https?:\/\/[^\s]+/g, '').trim();
+                // Custom caption overrides default text
+                // Keep the original default-text behavior
+                // for universal links from the File Store bot.
+                if (
+                    !textContent.includes("Here is your universal link:") &&
+                    !textContent.includes("Note:The same content")
+                ) {
+                    const customText = textContent
+                        .replace(/https?:\/\/[^\s]+/g, '')
+                        .trim();
+
                     if (customText.length > 0) {
                         finalCaption = customText;
                     }
                 }
 
-                const thumbFileId = await kvGet("latest_thumbnail_id");
+                // Prefer the image attached to this admin message
+                const adminPhotoId =
+                    msg.photo && msg.photo.length
+                        ? msg.photo[msg.photo.length - 1].file_id
+                        : null;
+
+                // Otherwise use stored thumbnail
+                const thumbFileId =
+                    adminPhotoId || await kvGet("latest_thumbnail_id");
+
                 let postRes;
 
-                if (thumbFileId) {
+                // Post the exact image sent with the custom caption
+                if (adminPhotoId) {
+                    postRes = await fetch(
+                        `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                chat_id: CHANNEL_ID,
+                                photo: adminPhotoId,
+                                caption: finalCaption,
+                                parse_mode: 'HTML',
+                                reply_markup: inlineKeyboard
+                            })
+                        }
+                    );
+                }
+
+                // Original thumbnail behavior if no image was attached
+                if (!adminPhotoId && thumbFileId) {
                     try {
-                        const getFileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${thumbFileId}`);
+                        const getFileRes = await fetch(
+                            `https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${thumbFileId}`
+                        );
+
                         const fileData = await getFileRes.json();
-                        
+
                         if (fileData.ok && fileData.result.file_path) {
-                            const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
+                            const fileUrl =
+                                `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
+
                             const imageRes = await fetch(fileUrl);
                             const imageBlob = await imageRes.blob();
 
                             const formData = new FormData();
+
                             formData.append('chat_id', CHANNEL_ID);
                             formData.append('photo', imageBlob, 'thumb.jpg');
                             formData.append('caption', finalCaption);
                             formData.append('parse_mode', 'HTML');
-                            formData.append('reply_markup', JSON.stringify(inlineKeyboard));
 
-                            postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-                                method: 'POST',
-                                body: formData
-                            });
+                            formData.append(
+                                'reply_markup',
+                                JSON.stringify(inlineKeyboard)
+                            );
+
+                            postRes = await fetch(
+                                `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`,
+                                {
+                                    method: 'POST',
+                                    body: formData
+                                }
+                            );
                         }
                     } catch (uploadErr) {
                         console.error("Upload Error:", uploadErr);
                     }
                 }
 
+                // Fallback to default banner
                 if (!postRes || !postRes.ok) {
-                    postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            chat_id: CHANNEL_ID,
-                            photo: DEFAULT_BANNER,
-                            caption: finalCaption,
-                            parse_mode: 'HTML',
-                            reply_markup: inlineKeyboard
-                        })
-                    });
+                    postRes = await fetch(
+                        `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                chat_id: CHANNEL_ID,
+                                photo: DEFAULT_BANNER,
+                                caption: finalCaption,
+                                parse_mode: 'HTML',
+                                reply_markup: inlineKeyboard
+                            })
+                        }
+                    );
                 }
 
                 const resJson = await postRes.json();
+
                 if (resJson.ok) {
-                    await sendMsg(chatId, "✅ <b>Post published successfully!</b>");
+                    await sendMsg(
+                        chatId,
+                        "✅ <b>Post published successfully!</b>"
+                    );
                 } else {
-                    await sendMsg(chatId, `❌ Error: ${resJson.description}`);
+                    await sendMsg(
+                        chatId,
+                        `❌ Error: ${resJson.description}`
+                    );
                 }
 
                 return res.status(200).json({ ok: true });
@@ -189,5 +359,6 @@ export default async function handler(req, res) {
     } catch (err) {
         console.error("Handler error:", err);
     }
+
     return res.status(200).json({ ok: true });
 }
