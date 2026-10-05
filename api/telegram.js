@@ -60,7 +60,7 @@ export default async function handler(req, res) {
         const body = req.body;
         if (!body) return res.status(200).json({ ok: true });
 
-        // DB Channel එකට Video හෝ Post එකක් වැටුණු විට ක්‍රියාත්මක වන කොටස
+        // 1. DB Channel එකට Video හෝ Post එකක් වැටුණු විට VIP Channel එකට Auto Copy කිරීම
         if (body.channel_post) {
             const post = body.channel_post;
             let thumbId = null;
@@ -71,7 +71,6 @@ export default async function handler(req, res) {
 
             if (thumbId) await kvSet("latest_thumbnail_id", thumbId);
 
-            // DB Channel එකට එන වීඩියෝ/පෝස්ට් එක කෙලින්ම VIP Channel එකට Forward Tags නැතිව Auto Copy කිරීම
             try {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/copyMessage`, {
                     method: 'POST',
@@ -89,6 +88,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ ok: true });
         }
 
+        // 2. Admin විසින් Post Bot වෙත පණිවිඩ එවන විට
         if (body.message) {
             const msg = body.message;
             const chatId = msg.chat.id;
@@ -105,10 +105,11 @@ export default async function handler(req, res) {
             }
 
             if (textContent.startsWith('/start') || textContent.startsWith('/help')) {
-                await sendMsg(chatId, "<b>Hot Lanka Bot Active!</b>\n\n- Forward a FileStore link to create a post with default text.\n- Use <code>/settext [your text]</code> to change the default caption.\n- To use a custom caption for a single post, type your text and paste the link at the end of it.");
+                await sendMsg(chatId, "<b>Hot Lanka Bot Active!</b>\n\n📸 <b>Send Photo with Caption:</b>\n[Your Custom Text]\nhttps://t.me/FileStoreSl_bot?start=...\n\n- The bot will publish the photo with Custom Text + Default Text.\n- The link will be scrambled into Watch & Download buttons.");
                 return res.status(200).json({ ok: true });
             }
 
+            // Link එකක් ඇති විට Post එක සකස් කිරීම
             if (textContent.includes("start=")) {
                 const startCode = textContent.split("start=")[1].split("&")[0].split(/\s+/)[0].trim();
                 const token = scramble(startCode);
@@ -120,49 +121,50 @@ export default async function handler(req, res) {
                     ]
                 };
 
-                let finalCaption = await kvGet("default_caption");
-                if (!finalCaption) {
-                    finalCaption = "<blockquote>🔥 Hot Lanka New Update! ❞</blockquote>\n<blockquote>⏳ Link will expire soon, download now! ❞</blockquote>";
+                // Default Caption එක ලබා ගැනීම
+                let defaultCaption = await kvGet("default_caption");
+                if (!defaultCaption) {
+                    defaultCaption = "<blockquote>🔥 Hot Lanka New Update! ❞</blockquote>\n<blockquote>⏳ Link will expire soon, download now! ❞</blockquote>";
                 }
 
-                if (!textContent.includes("Here is your universal link:") && !textContent.includes("Note:The same content")) {
-                    const customText = textContent.replace(/https?:\/\/[^\s]+/g, '').trim();
-                    if (customText.length > 0) {
-                        finalCaption = customText;
-                    }
+                // Custom Caption එක වෙන් කර ගැනීම (URL එක සහ FileStore default text ඉවත් කර)
+                let customText = textContent
+                    .replace(/https?:\/\/[^\s]+/g, '')
+                    .replace("Here is your universal link:", '')
+                    .replace("Note:The same content can be accessed by...", '')
+                    .trim();
+
+                // Custom Text එකක් තිබේ නම් Custom Text + Default Text දෙකම එකතු කිරීම
+                let finalCaption = defaultCaption;
+                if (customText.length > 0) {
+                    finalCaption = `<b>${customText}</b>\n\n${defaultCaption}`;
                 }
 
-                const thumbFileId = await kvGet("latest_thumbnail_id");
+                // පරිශීලකයා Photo එකක් එවා ඇත්නම් එම Photo එක භාවිත කිරීම
+                let photoToSend = null;
+                if (msg.photo && msg.photo.length > 0) {
+                    photoToSend = msg.photo[msg.photo.length - 1].file_id;
+                } else {
+                    // නැතහොත් DB එකට වැටුණු Latest Video Thumbnail එක භාවිත කිරීම
+                    photoToSend = await kvGet("latest_thumbnail_id");
+                }
+
                 let postRes;
 
-                if (thumbFileId) {
-                    try {
-                        const getFileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${thumbFileId}`);
-                        const fileData = await getFileRes.json();
-                        
-                        if (fileData.ok && fileData.result.file_path) {
-                            const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
-                            const imageRes = await fetch(fileUrl);
-                            const imageBlob = await imageRes.blob();
-
-                            const formData = new FormData();
-                            formData.append('chat_id', CHANNEL_ID);
-                            formData.append('photo', imageBlob, 'thumb.jpg');
-                            formData.append('caption', finalCaption);
-                            formData.append('parse_mode', 'HTML');
-                            formData.append('reply_markup', JSON.stringify(inlineKeyboard));
-
-                            postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-                                method: 'POST',
-                                body: formData
-                            });
-                        }
-                    } catch (uploadErr) {
-                        console.error("Upload Error:", uploadErr);
-                    }
-                }
-
-                if (!postRes || !postRes.ok) {
+                if (photoToSend) {
+                    postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            chat_id: CHANNEL_ID,
+                            photo: photoToSend,
+                            caption: finalCaption,
+                            parse_mode: 'HTML',
+                            reply_markup: inlineKeyboard
+                        })
+                    });
+                } else {
+                    // Thumbnail හෝ Photo කිසිවක් නැති විට Default Banner එක භාවිත කිරීම
                     postRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -178,7 +180,7 @@ export default async function handler(req, res) {
 
                 const resJson = await postRes.json();
                 if (resJson.ok) {
-                    await sendMsg(chatId, "✅ <b>Post published successfully!</b>");
+                    await sendMsg(chatId, "✅ <b>Post published successfully with your Image!</b>");
                 } else {
                     await sendMsg(chatId, `❌ Error: ${resJson.description}`);
                 }
