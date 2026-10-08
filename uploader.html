@@ -9,9 +9,8 @@
     <style>
         :root {
             --bg-dark: #0a0c14;
-            --card-bg: rgba(18, 19, 31, 0.85);
-            --card-border: rgba(138, 75, 255, 0.2);
-            --primary-purple: #7928ca;
+            --card-bg: rgba(18, 19, 31, 0.9);
+            --card-border: rgba(138, 75, 255, 0.25);
             --accent-purple: #9d4edd;
             --neon-glow: rgba(157, 78, 221, 0.4);
             --text-main: #f8f9fa;
@@ -29,7 +28,7 @@
         body {
             background-color: var(--bg-dark);
             background-image: 
-                radial-gradient(circle at 50% 10%, rgba(121, 40, 202, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 10%, rgba(121, 40, 202, 0.18) 0%, transparent 55%),
                 radial-gradient(circle at 80% 80%, rgba(157, 78, 221, 0.08) 0%, transparent 40%);
             color: var(--text-main);
             min-height: 100vh;
@@ -46,15 +45,14 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             width: 100%;
-            max-width: 540px;
-            padding: 36px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(121, 40, 202, 0.1);
-            position: relative;
+            max-width: 520px;
+            padding: 36px 30px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(121, 40, 202, 0.12);
         }
 
         .icon-wrapper {
-            width: 68px;
-            height: 68px;
+            width: 64px;
+            height: 64px;
             background: rgba(121, 40, 202, 0.15);
             border: 1px solid rgba(157, 78, 221, 0.3);
             border-radius: 20px;
@@ -66,18 +64,18 @@
         }
 
         .icon-wrapper svg {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             fill: #c77dff;
         }
 
         .header-section {
             text-align: center;
-            margin-bottom: 28px;
+            margin-bottom: 26px;
         }
 
         .header-title {
-            font-size: 22px;
+            font-size: 21px;
             font-weight: 700;
             letter-spacing: -0.5px;
             background: linear-gradient(135deg, #ffffff 30%, #c77dff 100%);
@@ -87,7 +85,7 @@
         }
 
         .header-subtitle {
-            font-size: 13.5px;
+            font-size: 13px;
             color: var(--text-muted);
             line-height: 1.5;
         }
@@ -108,7 +106,7 @@
             width: 100%;
             background: var(--input-bg);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
+            border-radius: 12px;
             padding: 13px 16px;
             color: #fff;
             font-size: 14px;
@@ -137,7 +135,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
         }
 
         .btn-upload:hover {
@@ -151,33 +148,46 @@
             transform: none;
         }
 
-        /* Progress Bar */
+        /* Progress Info & Bar */
+        .progress-wrapper {
+            margin-top: 22px;
+            display: none;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #d1d3e2;
+            margin-bottom: 8px;
+        }
+
         .progress-container {
-            margin-top: 24px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 10px;
-            height: 8px;
+            height: 10px;
             width: 100%;
             overflow: hidden;
-            display: none;
+            position: relative;
         }
 
         .progress-bar {
             height: 100%;
             width: 0%;
             background: linear-gradient(90deg, #7928ca, #c77dff);
-            box-shadow: 0 0 12px #9d4edd;
-            transition: width 0.3s ease;
+            box-shadow: 0 0 14px #9d4edd;
+            transition: width 0.4s ease;
         }
 
         /* Live Terminal Box */
         .terminal-box {
-            margin-top: 20px;
+            margin-top: 18px;
             background: #090a10;
             border: 1px solid rgba(138, 75, 255, 0.25);
             border-radius: 14px;
             padding: 14px;
-            height: 150px;
+            height: 140px;
             overflow-y: auto;
             font-family: 'Courier New', Courier, monospace;
             font-size: 12.5px;
@@ -189,7 +199,6 @@
             margin-bottom: 6px;
             line-height: 1.4;
         }
-
         .log-item.success { color: #4ade80; }
         .log-item.error { color: #f87171; }
         .log-item.info { color: #c084fc; }
@@ -206,7 +215,7 @@
 
     <div class="header-section">
         <h2 class="header-title">HotLanka Bot Engine</h2>
-        <p class="header-subtitle">Auto CDN Downloader & Telegram Broadcaster</p>
+        <p class="header-subtitle">Auto Cloud Downloader & Telegram Broadcaster</p>
     </div>
 
     <div class="form-group">
@@ -223,16 +232,24 @@
         <span>🚀 Start Auto-Upload & Post</span>
     </button>
 
-    <div class="progress-container" id="progContainer">
-        <div class="progress-bar" id="progBar"></div>
+    <!-- Real-time Progress Bar Block -->
+    <div class="progress-wrapper" id="progWrapper">
+        <div class="progress-header">
+            <span id="progStatus">Processing...</span>
+            <span id="progPercent">0%</span>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progBar"></div>
+        </div>
     </div>
 
+    <!-- Live Terminal Box -->
     <div class="terminal-box" id="termBox"></div>
 </div>
 
 <script>
-// ඔබගේ සක්‍රිය LocalTunnel URL එක
-const API_BASE = "https://green-cups-strive.loca.lt";
+// Railway Production Active URL
+const API_BASE = "https://unlockcontent-production.up.railway.app";
 
 function appendLog(text, type = "info") {
     const box = document.getElementById("termBox");
@@ -248,8 +265,10 @@ function startUpload() {
     const vUrl = document.getElementById("videoUrl").value.trim();
     const iUrl = document.getElementById("imageUrl").value.trim();
     const btn = document.getElementById("submitBtn");
-    const progContainer = document.getElementById("progContainer");
+    const progWrapper = document.getElementById("progWrapper");
     const progBar = document.getElementById("progBar");
+    const progPercent = document.getElementById("progPercent");
+    const progStatus = document.getElementById("progStatus");
     const termBox = document.getElementById("termBox");
 
     if (!vUrl) {
@@ -258,12 +277,13 @@ function startUpload() {
     }
 
     btn.disabled = true;
-    btn.innerHTML = "<span>⚙️ Processing in Cloud...</span>";
-    progContainer.style.display = "block";
+    btn.innerHTML = "<span>⚙️ Cloud Processing Live...</span>";
+    progWrapper.style.display = "block";
     progBar.style.width = "5%";
+    progPercent.innerText = "5%";
+    progStatus.innerText = "Connecting to server...";
     termBox.innerHTML = "";
 
-    // Server-Sent Events (SSE) Stream
     const streamEndpoint = `${API_BASE}/stream_upload?video_url=${encodeURIComponent(vUrl)}&image_url=${encodeURIComponent(iUrl)}`;
     const eventSource = new EventSource(streamEndpoint);
 
@@ -277,6 +297,13 @@ function startUpload() {
 
         if (payload.progress) {
             progBar.style.width = payload.progress + "%";
+            progPercent.innerText = payload.progress + "%";
+            
+            if (payload.progress < 40) progStatus.innerText = "Downloading Video...";
+            else if (payload.progress < 60) progStatus.innerText = "Generating Metadata...";
+            else if (payload.progress < 90) progStatus.innerText = "Uploading to Telegram...";
+            else if (payload.progress < 100) progStatus.innerText = "Publishing Post...";
+            else progStatus.innerText = "Completed!";
         }
 
         if (payload.progress >= 100) {
@@ -287,7 +314,7 @@ function startUpload() {
     };
 
     eventSource.onerror = function() {
-        appendLog("❌ Connection closed or error occurred.", "error");
+        appendLog("❌ Process Finished or Connection closed.", "info");
         eventSource.close();
         btn.disabled = false;
         btn.innerHTML = "<span>🚀 Start Auto-Upload & Post</span>";
