@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     const VIP_CHANNEL_ID = "-1004316350899"; // VIP Channel ID
     const ADMIN_USER_ID = 5411921025;
     const BASE_URL = "https://unlockcontent.vercel.app";
-    const DEFAULT_BANNER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80";
+    const DEFAULT_BANNER = "https://github.com/OPYasiru/unlock_content/blob/145908a4c74dc660d851cb68a80cbaeb67df20b4/image.jpg";
 
     const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
     const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
