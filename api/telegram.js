@@ -2,7 +2,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(200).send('Bot is running');
 
     const BOT_TOKEN = "8715294684:AAG-avmObwlmLRFVK8LTtpcUbaZtwX_g4g4";
-    const CHANNEL_ID = "-1003920624467"; // Main Channel ID
+    const CHANNEL_ID = "-1004309315754"; // Main Channel ID
     const VIP_CHANNEL_ID = "-1004316350899"; // VIP Channel ID
     const ADMIN_USER_ID = 5411921025;
     const BASE_URL = "https://unlockcontent.vercel.app";
