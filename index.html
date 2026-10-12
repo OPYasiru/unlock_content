@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Get Your File</title>
@@ -10,7 +10,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     
     <style>
         :root {
@@ -46,7 +45,7 @@
 
         .container {
             background: var(--card-bg);
-            padding: 32px 24px;
+            padding: 28px 24px;
             border-radius: 24px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(139, 92, 246, 0.1);
             text-align: center;
@@ -55,61 +54,93 @@
             border: 1px solid var(--border-color);
         }
 
+        /* Step Progress Indicator */
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .step-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: #1f2937;
+            color: #94a3b8;
+            border: 1px solid #374151;
+            transition: all 0.3s ease;
+        }
+
+        .step-badge.active {
+            background: rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+        }
+
+        .step-badge.completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border-color: #10b981;
+        }
+
+        .step-divider {
+            width: 25px;
+            height: 2px;
+            background: #374151;
+            border-radius: 2px;
+        }
+
+        .step-divider.filled {
+            background: #10b981;
+        }
+
         /* Soft Ring Glow Animation */
         @keyframes softPulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
-            }
-            70% {
-                box-shadow: 0 0 0 12px rgba(139, 92, 246, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
-            }
+            0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+            70% { box-shadow: 0 0 0 12px rgba(139, 92, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
         }
 
         @keyframes successPulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
-            }
-            70% {
-                box-shadow: 0 0 0 12px rgba(16, 185, 129, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-            }
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
         .icon-box {
-            width: 75px;
-            height: 75px;
+            width: 72px;
+            height: 72px;
             background: rgba(139, 92, 246, 0.1);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 20px auto;
+            margin: 0 auto 16px auto;
             border: 1px solid rgba(139, 92, 246, 0.3);
             animation: softPulse 2.5s infinite;
             transition: all 0.3s ease;
         }
 
         .icon-top {
-            font-size: 32px;
+            font-size: 30px;
             color: #a78bfa;
         }
 
         h1 {
-            font-size: 22px;
+            font-size: 21px;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             letter-spacing: 0.3px;
         }
 
         p {
             color: var(--text-muted);
-            font-size: 14px;
-            margin-bottom: 24px;
+            font-size: 13px;
+            margin-bottom: 20px;
             line-height: 1.5;
         }
 
@@ -130,8 +161,8 @@
             background: linear-gradient(135deg, #8b5cf6, #7c3aed);
             color: white;
             border: none;
-            padding: 15px 20px;
-            font-size: 15px;
+            padding: 14px 20px;
+            font-size: 14px;
             font-weight: 600;
             border-radius: 14px;
             cursor: pointer;
@@ -153,22 +184,22 @@
             animation: btnDownloadGlow 3s infinite ease-in-out;
         }
 
-        /* Circular Progress Timer Styles */
+        /* Circular Progress Timer */
         .timer-container {
             display: none;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .circular-progress {
             position: relative;
-            width: 110px;
-            height: 110px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             background: conic-gradient(#8b5cf6 360deg, #1f2937 0deg);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 16px auto;
+            margin: 0 auto 14px auto;
             box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
             transition: background 0.1s linear;
         }
@@ -176,47 +207,47 @@
         .circular-progress::before {
             content: "";
             position: absolute;
-            width: 90px;
-            height: 90px;
+            width: 82px;
+            height: 82px;
             border-radius: 50%;
             background: var(--card-bg);
         }
 
         .time-display {
             position: relative;
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 700;
             color: #f3e8ff;
         }
 
-        /* SweetAlert2 Custom Theme & Size matched with UI */
+        /* SweetAlert2 Popup Style */
         .swal2-popup {
             background: #111827 !important;
             color: #f8fafc !important;
             border: 1px solid var(--border-color);
             border-radius: 24px !important;
             font-family: inherit !important;
-            width: 330px !important;
-            padding: 24px 20px !important;
+            width: 320px !important;
+            padding: 22px 18px !important;
             box-shadow: 0 20px 40px rgba(0,0,0,0.8) !important;
         }
         .swal2-title {
             color: #f8fafc !important;
-            font-size: 20px !important;
+            font-size: 19px !important;
             margin-bottom: 8px !important;
         }
         .swal2-html-container {
             color: var(--text-muted) !important;
-            font-size: 14px !important;
+            font-size: 13px !important;
             line-height: 1.5 !important;
         }
         .swal2-actions {
-            margin-top: 20px !important;
+            margin-top: 18px !important;
         }
         .swal2-confirm {
             background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
             border-radius: 12px !important;
-            padding: 10px 24px !important;
+            padding: 9px 22px !important;
             font-weight: 600 !important;
             box-shadow: 0 4px 15px var(--primary-glow) !important;
         }
@@ -225,6 +256,13 @@
 <body>
 
     <div class="container">
+        <!-- Step Bar -->
+        <div class="step-indicator" id="stepIndicator">
+            <span class="step-badge active" id="badgeStep1">Step 1</span>
+            <div class="step-divider" id="stepDivider"></div>
+            <span class="step-badge" id="badgeStep2">Step 2</span>
+        </div>
+
         <div class="icon-box" id="iconBox">
             <i class="fa-solid fa-lock icon-top" id="mainIcon"></i>
         </div>
@@ -232,17 +270,17 @@
         <h1 id="mainTitle">Get Your File</h1>
         <p id="instructionText">Click below, wait 10 seconds on the opened page, then come back here.</p>
 
-        <!-- Circular Timer Box -->
+        <!-- Circular Timer -->
         <div class="timer-container" id="timerContainer">
             <div class="circular-progress" id="progressCircle">
-                <div class="time-display" id="timeDisplay">15</div>
+                <div class="time-display" id="timeDisplay">10</div>
             </div>
-            <p style="margin: 0; font-size: 14px; color: var(--text-muted);" id="timerSubText">Verifying your visit...</p>
+            <p style="margin: 0; font-size: 13px; color: var(--text-muted);" id="timerSubText">Verifying visit...</p>
         </div>
 
         <!-- Buttons -->
-        <button class="btn" id="unlockBtn">
-            <i class="fa-solid fa-lock-open"></i> Unlock Now
+        <button class="btn" id="actionBtn">
+            <i class="fa-solid fa-arrow-right"></i> Start Step 1
         </button>
         
         <button class="btn btn-download" id="downloadBtn" style="display: none;">
@@ -252,7 +290,14 @@
 
     <script>
         const BOT_USERNAME = "FileStoreSl_bot";
-        const AD_DIRECT_LINK = "https://omg10.com/4/11949839";
+        
+        // Monetag Direct Links දෙක
+        const AD_DIRECT_LINK_1 = "https://uplcm.com/4/11949839";
+        const AD_DIRECT_LINK_2 = "https://uplcm.com/4/12015244"; // දෙවැනි Direct Link එක මෙතැනට දමන්න
+
+        // Timer සැකසුම් (තත්පර 10)
+        const STEP_TIME = 10;       // මුළු කාලය (Seconds)
+        const MIN_STAY_TIME = 10;   // රැඳී සිටිය යුතු අවම කාලය (Seconds)
 
         // Compact Token Decryptor Setup
         const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
@@ -267,7 +312,6 @@
             }).join('');
         }
 
-        // Query parameters කියවා ගැනීම (?t= සහ ?start= දෙකම සහය දක්වයි)
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('t');
         let fileCode = urlParams.get('start');
@@ -276,7 +320,7 @@
             fileCode = descramble(token);
         }
 
-        const unlockBtn = document.getElementById('unlockBtn');
+        const actionBtn = document.getElementById('actionBtn');
         const downloadBtn = document.getElementById('downloadBtn');
         const timerContainer = document.getElementById('timerContainer');
         const timeDisplay = document.getElementById('timeDisplay');
@@ -287,8 +331,12 @@
         const iconBox = document.getElementById('iconBox');
         const timerSubText = document.getElementById('timerSubText');
 
+        const badgeStep1 = document.getElementById('badgeStep1');
+        const badgeStep2 = document.getElementById('badgeStep2');
+        const stepDivider = document.getElementById('stepDivider');
+
+        let currentStep = 1;
         let adClickTime = 0;
-        let totalTime = 15;
         let timerInterval;
         let isWaiting = false;
 
@@ -299,112 +347,125 @@
                 text: 'Invalid or missing link.',
                 confirmButtonColor: '#8b5cf6'
             });
-            unlockBtn.style.display = 'none';
+            actionBtn.style.display = 'none';
             instructionText.innerText = "This link is not valid.";
             mainTitle.innerText = "Error";
+            document.getElementById('stepIndicator').style.display = 'none';
         }
 
-        unlockBtn.addEventListener('click', () => {
+        actionBtn.addEventListener('click', () => {
             adClickTime = Date.now();
             isWaiting = true;
 
-            window.open(AD_DIRECT_LINK, '_blank');
+            const linkToOpen = (currentStep === 1) ? AD_DIRECT_LINK_1 : AD_DIRECT_LINK_2;
+            window.open(linkToOpen, '_blank');
 
-            unlockBtn.style.display = 'none';
+            actionBtn.style.display = 'none';
             timerContainer.style.display = 'block';
             instructionText.style.display = 'none'; 
-            mainTitle.innerText = "Verifying your visit...";
+            mainTitle.innerText = `Verifying Step ${currentStep}...`;
 
             timerInterval = setInterval(() => {
                 let elapsedTime = (Date.now() - adClickTime) / 1000;
-                let remainingTime = totalTime - elapsedTime;
+                let remainingTime = STEP_TIME - elapsedTime;
 
                 if (remainingTime > 0) {
                     timeDisplay.innerText = Math.ceil(remainingTime);
-                    let degree = (remainingTime / totalTime) * 360;
+                    let degree = (remainingTime / STEP_TIME) * 360;
                     progressCircle.style.background = `conic-gradient(#8b5cf6 ${degree}deg, #1f2937 0deg)`;
-                    timerSubText.innerHTML = `The link will unlock in <b>${Math.ceil(remainingTime)}</b> seconds.`;
+                    timerSubText.innerHTML = `Verifying in <b>${Math.ceil(remainingTime)}</b>s...`;
                 } else {
                     clearInterval(timerInterval);
                     timeDisplay.innerText = "0";
                     progressCircle.style.background = `conic-gradient(#8b5cf6 0deg, #1f2937 0deg)`;
-                    checkFinalStatus();
+                    handleStepComplete();
                 }
             }, 50);
         });
 
-        document.addEventListener("visibilitychange", () => {
-            checkUserReturn();
-        });
-
-        window.addEventListener("focus", () => {
-            checkUserReturn();
-        });
+        document.addEventListener("visibilitychange", () => checkUserReturn());
+        window.addEventListener("focus", () => checkUserReturn());
 
         function checkUserReturn() {
             if (!document.hidden && isWaiting) {
                 let timeSpent = (Date.now() - adClickTime) / 1000;
                 
-                if (timeSpent < 10) {
+                if (timeSpent < MIN_STAY_TIME) {
                     clearInterval(timerInterval);
                     isWaiting = false;
                     
                     Swal.fire({
                         icon: 'warning',
                         title: 'Too Fast!',
-                        text: 'You returned too early. Please stay on the ad page for at least 10 seconds.',
-                        confirmButtonColor: '#8b5cf6',
-                        showClass: {
-                            popup: 'animate__animated animate__zoomIn animate__faster'
-                        },
-                        hideClass: {
-                            popup: 'animate__animated animate__zoomOut animate__faster'
-                        }
+                        text: `You returned too early. Please stay on the ad page for at least ${MIN_STAY_TIME} seconds to complete Step ${currentStep}.`,
+                        confirmButtonColor: '#8b5cf6'
                     }).then(() => {
-                        resetUI();
+                        resetCurrentStepUI();
                     });
                 }
             }
         }
 
-        function checkFinalStatus() {
+        function handleStepComplete() {
             let timeSpent = (Date.now() - adClickTime) / 1000;
             isWaiting = false;
 
-            if (timeSpent >= 10) {
+            if (timeSpent >= MIN_STAY_TIME) {
                 timerContainer.style.display = 'none';
                 instructionText.style.display = 'block';
-                mainTitle.innerText = "Ready!";
-                instructionText.innerHTML = "Your file is successfully unlocked!";
-                downloadBtn.style.display = 'flex';
-                
-                mainIcon.className = "fa-solid fa-lock-open icon-top";
-                mainIcon.style.color = "#34d399";
-                iconBox.style.animation = "successPulse 2.5s infinite";
-                iconBox.style.background = "rgba(16, 185, 129, 0.1)";
-                iconBox.style.borderColor = "rgba(16, 185, 129, 0.3)";
-                
-                downloadBtn.onclick = () => {
-                    window.location.href = `https://t.me/${BOT_USERNAME}?start=${fileCode}`;
-                };
+
+                if (currentStep === 1) {
+                    // Step 1 ඉවරයි -> Step 2 වලට මාරු වීම
+                    currentStep = 2;
+                    badgeStep1.className = "step-badge completed";
+                    badgeStep1.innerHTML = "Step 1 ✓";
+                    stepDivider.className = "step-divider filled";
+                    badgeStep2.className = "step-badge active";
+
+                    mainTitle.innerText = "Step 1 Completed!";
+                    instructionText.innerText = "Click below, wait 10 seconds on the page, then return to unlock your file.";
+                    actionBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> Start Step 2';
+                    actionBtn.style.display = 'flex';
+                } else {
+                    // Step 2 ඉවරයි -> Download Unlock වීම
+                    badgeStep2.className = "step-badge completed";
+                    badgeStep2.innerHTML = "Step 2 ✓";
+
+                    mainTitle.innerText = "Ready!";
+                    instructionText.innerHTML = "Your file is successfully unlocked!";
+                    downloadBtn.style.display = 'flex';
+                    
+                    mainIcon.className = "fa-solid fa-lock-open icon-top";
+                    mainIcon.style.color = "#34d399";
+                    iconBox.style.animation = "successPulse 2.5s infinite";
+                    iconBox.style.background = "rgba(16, 185, 129, 0.1)";
+                    iconBox.style.borderColor = "rgba(16, 185, 129, 0.3)";
+                    
+                    downloadBtn.onclick = () => {
+                        window.location.href = `https://t.me/${BOT_USERNAME}?start=${fileCode}`;
+                    };
+                }
             }
         }
 
-        function resetUI() {
-            unlockBtn.style.display = 'flex';
+        function resetCurrentStepUI() {
+            actionBtn.style.display = 'flex';
             timerContainer.style.display = 'none';
             instructionText.style.display = 'block';
-            mainTitle.innerText = "Get Your File";
-            instructionText.innerText = "Click below, wait 10 seconds on the opened page, then come back here.";
             
-            mainIcon.className = "fa-solid fa-lock icon-top";
-            mainIcon.style.color = "#a78bfa";
-            iconBox.style.animation = "softPulse 2.5s infinite";
-            iconBox.style.background = "rgba(139, 92, 246, 0.1)";
-            iconBox.style.borderColor = "rgba(139, 92, 246, 0.3)";
+            if (currentStep === 1) {
+                mainTitle.innerText = "Get Your File";
+                instructionText.innerText = "Click below, wait 10 seconds on the opened page, then come back here.";
+                actionBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> Start Step 1';
+            } else {
+                mainTitle.innerText = "Step 2 (Final)";
+                instructionText.innerText = "Click below, wait 10 seconds on the opened page, then return to unlock.";
+                actionBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> Start Step 2';
+            }
         }
     </script>
-        <!-- Vercel Web Analytics -->
+    
+    <!-- Vercel Web Analytics -->
     <script>
       window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
     </script>
