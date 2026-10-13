@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Get Your File</title>
@@ -289,15 +289,16 @@
     </div>
 
     <script>
-        const BOT_USERNAME = "LankaFile_bot";
+        const OLD_BOT_USERNAME = "FileStoreSl_bot";
+        const NEW_BOT_USERNAME = "LankaFile_bot";
         
         // Monetag Direct Links දෙක
-        const AD_DIRECT_LINK_1 = "https://uplcm.com/4/11949839";
-        const AD_DIRECT_LINK_2 = "https://uplcm.com/4/12015244"; // දෙවැනි Direct Link එක මෙතැනට දමන්න
+        const AD_DIRECT_LINK_1 = "https://omg10.com/4/11949839";
+        const AD_DIRECT_LINK_2 = "https://omg10.com/4/11949839";
 
         // Timer සැකසුම් (තත්පර 10)
-        const STEP_TIME = 10;       // මුළු කාලය (Seconds)
-        const MIN_STAY_TIME = 10;   // රැඳී සිටිය යුතු අවම කාලය (Seconds)
+        const STEP_TIME = 10;
+        const MIN_STAY_TIME = 10;
 
         // Compact Token Decryptor Setup
         const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
@@ -415,7 +416,6 @@
                 instructionText.style.display = 'block';
 
                 if (currentStep === 1) {
-                    // Step 1 ඉවරයි -> Step 2 වලට මාරු වීම
                     currentStep = 2;
                     badgeStep1.className = "step-badge completed";
                     badgeStep1.innerHTML = "Step 1 ✓";
@@ -427,7 +427,6 @@
                     actionBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> Start Step 2';
                     actionBtn.style.display = 'flex';
                 } else {
-                    // Step 2 ඉවරයි -> Download Unlock වීම
                     badgeStep2.className = "step-badge completed";
                     badgeStep2.innerHTML = "Step 2 ✓";
 
@@ -442,7 +441,8 @@
                     iconBox.style.borderColor = "rgba(16, 185, 129, 0.3)";
                     
                     downloadBtn.onclick = () => {
-                        window.location.href = `https://t.me/${BOT_USERNAME}?start=${fileCode}`;
+                        const targetBot = fileCode.startsWith("DW5") ? OLD_BOT_USERNAME : NEW_BOT_USERNAME;
+                        window.location.href = `https://t.me/${targetBot}?start=${fileCode}`;
                     };
                 }
             }
