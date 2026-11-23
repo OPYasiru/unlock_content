@@ -76,7 +76,7 @@ export default async function handler(req, res) {
                 const mgKey = `mg_${post.media_group_id}`;
                 const lockKey = `mg_lock_${post.media_group_id}`;
 
-                // Redis List එකට message_id එකතු කිරීම
+                // 1. Redis List එකට message_id එකතු කිරීම
                 await fetch(KV_URL, {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
@@ -85,20 +85,20 @@ export default async function handler(req, res) {
                 await fetch(KV_URL, {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(["EXPIRE", mgKey, 60])
+                    body: JSON.stringify(["EXPIRE", mgKey, 120])
                 });
 
-                // පළමු item එකට පමණක් lock එක ලබා ගැනීම (SET NX)
+                // 2. පළමු item එකට පමණක් lock එක ලබා ගැනීම (SET NX)
                 const lockResp = await fetch(KV_URL, {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(["SET", lockKey, "1", "NX", "EX", 30])
+                    body: JSON.stringify(["SET", lockKey, "1", "NX", "EX", 60])
                 });
                 const lockData = await lockResp.json();
 
                 if (lockData.result === "OK") {
-                    // Album එකේ අනෙක් files ටික Telegram එකෙන් එනකල් තත්පර 2.5ක් රැඳී සිටීම
-                    await new Promise(resolve => setTimeout(resolve, 2500));
+                    // Album එකේ අනෙක් videos/photos ටික Telegram එකෙන් එනකල් තත්පර 5ක් රැඳී සිටීම
+                    await new Promise(resolve => setTimeout(resolve, 5000));
 
                     const listResp = await fetch(KV_URL, {
                         method: 'POST',
@@ -108,8 +108,8 @@ export default async function handler(req, res) {
                     const listData = await listResp.json();
 
                     if (listData.result && listData.result.length > 0) {
-                        const messageIds = listData.result
-                            .map(id => Number(id))
+                        // Duplicate IDs ඉවත් කර පිළිවෙළට සැකසීම
+                        const messageIds = [...new Set(listData.result.map(id => Number(id)))]
                             .sort((a, b) => a - b);
 
                         try {
