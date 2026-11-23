@@ -60,7 +60,7 @@ export default async function handler(req, res) {
         const body = req.body;
         if (!body) return res.status(200).json({ ok: true });
 
-        // DB Channel එකට Video හෝ Post එකක් වැටුණු විට ක්‍රියාත්මක වන කොටස (Single + Album Support)
+        // 1. DB Channel එකට Video හෝ Post එකක් වැටුණු විට ක්‍රියාත්මක වීම
         if (body.channel_post) {
             const post = body.channel_post;
             let thumbId = null;
@@ -71,77 +71,18 @@ export default async function handler(req, res) {
 
             if (thumbId) await kvSet("latest_thumbnail_id", thumbId);
 
-            // Album (Media Group) එකක් නම් සියලුම items එකතු කර එකවර copyMessages මඟින් යැවීම
-            if (post.media_group_id && KV_URL && KV_TOKEN) {
-                const mgKey = `mg_${post.media_group_id}`;
-                const lockKey = `mg_lock_${post.media_group_id}`;
-
-                // 1. Redis List එකට message_id එකතු කිරීම
-                await fetch(KV_URL, {
+            try {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/copyMessage`, {
                     method: 'POST',
-                    headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(["RPUSH", mgKey, String(post.message_id)])
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: VIP_CHANNEL_ID,
+                        from_chat_id: post.chat.id,
+                        message_id: post.message_id
+                    })
                 });
-                await fetch(KV_URL, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(["EXPIRE", mgKey, 120])
-                });
-
-                // 2. පළමු item එකට පමණක් lock එක ලබා ගැනීම (SET NX)
-                const lockResp = await fetch(KV_URL, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(["SET", lockKey, "1", "NX", "EX", 60])
-                });
-                const lockData = await lockResp.json();
-
-                if (lockData.result === "OK") {
-                    // Album එකේ අනෙක් videos/photos ටික Telegram එකෙන් එනකල් තත්පර 5ක් රැඳී සිටීම
-                    await new Promise(resolve => setTimeout(resolve, 5000));
-
-                    const listResp = await fetch(KV_URL, {
-                        method: 'POST',
-                        headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify(["LRANGE", mgKey, 0, -1])
-                    });
-                    const listData = await listResp.json();
-
-                    if (listData.result && listData.result.length > 0) {
-                        // Duplicate IDs ඉවත් කර පිළිවෙළට සැකසීම
-                        const messageIds = [...new Set(listData.result.map(id => Number(id)))]
-                            .sort((a, b) => a - b);
-
-                        try {
-                            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/copyMessages`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    chat_id: VIP_CHANNEL_ID,
-                                    from_chat_id: post.chat.id,
-                                    message_ids: messageIds
-                                })
-                            });
-                        } catch (vipErr) {
-                            console.error("VIP Album Copy Error:", vipErr);
-                        }
-                    }
-                }
-            } else {
-                // තනි Video / Photo එකක් නම් සුපුරුදු පරිදි copyMessage කිරීම
-                try {
-                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/copyMessage`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            chat_id: VIP_CHANNEL_ID,
-                            from_chat_id: post.chat.id,
-                            message_id: post.message_id
-                        })
-                    });
-                } catch (vipErr) {
-                    console.error("VIP Copy Error:", vipErr);
-                }
+            } catch (vipErr) {
+                console.error("VIP Copy Error:", vipErr);
             }
 
             return res.status(200).json({ ok: true });
